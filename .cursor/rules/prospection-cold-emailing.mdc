@@ -1,0 +1,59 @@
+---
+description: Contexte profil développeur et projet d’automatisation de prospection cold email / LinkedIn
+alwaysApply: true
+---
+
+# Contexte profil
+
+- **Rôle** : développeur fullstack orienté frontend (Next.js, React.js, Node.js).
+- **Objectif** : automatiser une partie de la prospection commerciale (France) sans dépendre d’API payantes, puis construire un dashboard de suivi (Next.js / Fastify / Prisma).
+
+# Vision du projet
+
+- **But principal** : trouver automatiquement des entreprises françaises pertinentes, récupérer leurs coordonnées (email / LinkedIn), envoyer des messages de prospection personnalisés, puis suivre les réponses et le statut des leads.
+- **Contraintes** :
+  - Pas d’API payantes (scraping + SMTP only).
+  - Volume raisonnable (30–50 emails / jour) pour limiter le risque de spam.
+  - Prévoir une architecture modulable pour ajouter plus tard un dashboard web.
+
+# Modules fonctionnels prévus
+
+- **Module Source de prospects**
+  - Requêtes Google ciblées (FR), ex. `site:welcometothejungle.com "React"`, `site:welcometothejungle.com "Next.js"`, `startup SaaS France React`.
+  - Job boards à scraper (ex. Welcome to the Jungle, Indeed).
+  - Signal clé : entreprise qui recrute sur React / Next.js = besoin probable frontend.
+
+- **Module Scraper**
+  - Techs possibles : Playwright ou Puppeteer (navigateur headless).
+  - Flux typique : page d’offre → extraction du nom d’entreprise → extraction du site → stockage des URLs.
+
+- **Module Extraction de domaine**
+  - Normalisation d’URL : ex. `https://www.startup.com/about` → `startup.com`.
+  - Objectif : éviter les doublons et faciliter la recherche d’emails.
+
+- **Module Email Finder (sans API)**
+  - Crawler interne simple sur des pages typiques (`/contact`, `/about`, `/team`, `/legal`, `/mentions-legales`).
+  - Détection d’emails par regex + lecture des liens `mailto:` et du footer.
+  - Pattern générique : `[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}` (adapté en case-insensitive).
+
+- **Module Génération d’emails probables**
+  - Si aucun email trouvé, génération de patterns standards : `contact@domain.com`, `hello@domain.com`, `prenom@domain.com`, `firstname.lastname@domain.com`, etc.
+  - Possibilité de tester certains patterns via SMTP verify.
+
+- **Module Enrichissement**
+  - Enregistrer pour chaque lead :
+    - `company`, `domain`, `email`, `linkedin`, `tech_stack`, `source`.
+  - Détection possible du stack (Next/React) via scan HTML (`_next/static`, `react`, `webpack`, etc.).
+
+- **Base de données**
+  - Schéma simple `leads` :
+    - `id`, `company`, `domain`, `email`, `linkedin`, `source`, `status`, `created_at`.
+    - `status` ∈ {`new`, `contacted`, `replied`, `interested`, `closed`}.
+  - Cible : SQLite ou PostgreSQL (en pratique, Prisma pourra être utilisé plus tard).
+
+- **Module Email Sender**
+  - Envoi via SMTP (Gmail, Outlook ou domaine perso).
+  - Process : queue → send → log, avec limitation quotidienne (30–50 emails).
+  - Support de templates personnalisables, ex. :
+    - `Bonjour {{prenom}}, j’ai vu que {{company}} développe {{produit}}. Je suis développeur Next.js freelance...`
+

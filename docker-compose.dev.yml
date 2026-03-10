@@ -1,0 +1,77 @@
+# Dev : Postgres + API avec hot reload (code monté).
+# Usage : docker compose -f docker-compose.dev.yml up -d --build
+# API : http://localhost:3000 — Lancer l'app Next.js en local (pnpm dev dans ./app) si besoin.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    command: sh -c "pnpm db:migrate:deploy && pnpm run dev"
+    environment:
+      CI: "true"
+      NODE_ENV: development
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      BASE_URL_API: ${BASE_URL_API}
+      BASE_URL_APP: ${BASE_URL_APP}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      COOKIE_MAX_AGE: ${COOKIE_MAX_AGE}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS}
+      JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
