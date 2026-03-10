@@ -1,21 +1,32 @@
 export const LeadStatus = {
-  NEW: "new",
-  CONTACTED: "contacted",
-  REPLIED: "replied",
-  INTERESTED: "interested",
-  CLOSED: "closed",
+	NEW: "NEW",
+	CONTACTED: "CONTACTED",
+	REPLIED: "REPLIED",
+	INTERESTED: "INTERESTED",
+	CLOSED: "CLOSED",
 } as const;
 
 export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
 
-export interface Lead {
-  id: string;
-  company: string;
-  domain: string;
-  email: string;
-  linkedin: string;
-  techStack: string;
-  source: string;
-  status: LeadStatus;
-  createdAt: Date;
+export interface LeadType {
+	id: string;
+	company: string;
+	domain: string;
+	email: string | null;
+	linkedin: string | null;
+	techStack: string | null;
+	source: string;
+	status: LeadStatus;
+	createdAt: Date;
+	contactedAt: Date | null;
+}
+
+export interface CreateLeadInputType {
+	company: string;
+	domain: string;
+	email?: string | null;
+	linkedin?: string | null;
+	techStack?: string | null;
+	source: string;
+	status?: LeadStatus;
 }

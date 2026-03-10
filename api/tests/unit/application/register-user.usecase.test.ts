@@ -11,7 +11,6 @@ function createUser(overrides: Partial<UserType> = {}): UserType {
 		id: "user-1",
 		email: "u@example.com",
 		password: "hashed",
-		username: "user1",
 		createdAt: new Date(),
 		updatedAt: new Date(),
 		deletedAt: null,
@@ -48,7 +47,6 @@ describe("RegisterUserUsecase", () => {
 			id: "new-id",
 			email: "new@example.com",
 			password: "hashedPassword123",
-			username: "newuser",
 		});
 		vi.mocked(userRepository.create).mockResolvedValue(Result.ok(created));
 
@@ -56,14 +54,12 @@ describe("RegisterUserUsecase", () => {
 		const result = await usecase.execute({
 			email: "new@example.com",
 			password: "Secret123",
-			username: "newuser",
 		});
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.value).not.toHaveProperty("password");
 			expect(result.value.email).toBe("new@example.com");
-			expect(result.value.username).toBe("newuser");
 			expect(result.value.role).toBe(Role.USER);
 		}
 		expect(userRepository.findByEmail).toHaveBeenCalledWith("new@example.com");
@@ -81,7 +77,6 @@ describe("RegisterUserUsecase", () => {
 		const result = await usecase.execute({
 			email: "taken@example.com",
 			password: "Secret123",
-			username: "someone",
 		});
 
 		expect(result.ok).toBe(false);
@@ -99,7 +94,6 @@ describe("RegisterUserUsecase", () => {
 			id: "id",
 			email: "admin@example.com",
 			password: "hashed",
-			username: "admin",
 			role: Role.ADMIN,
 		});
 		vi.mocked(userRepository.create).mockResolvedValue(Result.ok(created));
@@ -108,7 +102,6 @@ describe("RegisterUserUsecase", () => {
 		const result = await usecase.execute({
 			email: "admin@example.com",
 			password: "Secret123",
-			username: "admin",
 			role: Role.ADMIN,
 		});
 
@@ -126,7 +119,6 @@ describe("RegisterUserUsecase", () => {
 		const result = await usecase.execute({
 			email: "a@example.com",
 			password: "Secret123",
-			username: "u",
 		});
 
 		expect(result.ok).toBe(false);
@@ -143,7 +135,6 @@ describe("RegisterUserUsecase", () => {
 		const result = await usecase.execute({
 			email: "a@example.com",
 			password: "Secret123",
-			username: "u",
 		});
 
 		expect(result.ok).toBe(false);
@@ -162,7 +153,6 @@ describe("RegisterUserUsecase", () => {
 		const result = await usecase.execute({
 			email: "a@example.com",
 			password: "Secret123",
-			username: "u",
 		});
 
 		expect(result.ok).toBe(false);

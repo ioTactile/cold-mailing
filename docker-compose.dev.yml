@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile
       target: dev
     restart: unless-stopped
-    command: sh -c "pnpm db:migrate:deploy && pnpm run dev"
+    command: sh -c "pnpm db:generate && pnpm db:migrate:deploy && pnpm run dev"
     environment:
       CI: "true"
       NODE_ENV: development
@@ -55,6 +55,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS}
       JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS}
+      REDIS_URL: ${REDIS_URL}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      FROM_EMAIL: ${FROM_EMAIL}
     ports:
       - "3000:3000"
     volumes:

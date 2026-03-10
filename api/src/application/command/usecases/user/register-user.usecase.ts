@@ -7,7 +7,6 @@ import { Role } from "@/domain/user/user.type.ts";
 export interface RegisterUserInput {
 	email: string;
 	password: string;
-	username: string;
 	role?: Role;
 }
 
@@ -40,7 +39,6 @@ export class RegisterUserUsecase {
 			id: "",
 			email: input.email,
 			password: hashed.value,
-			username: input.username,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			deletedAt: null,

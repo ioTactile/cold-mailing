@@ -10,7 +10,6 @@ function createUser(overrides: Partial<UserType> = {}): UserType {
 		id: "user-1",
 		email: "u@example.com",
 		password: "hashed",
-		username: "user1",
 		createdAt: new Date(),
 		updatedAt: new Date(),
 		deletedAt: null,

@@ -33,13 +33,14 @@ enum LeadStatus {
 }
 
 model Lead {
-  id        String     @id @default(uuid())
-  company   String
-  domain    String
-  email     String?
-  linkedin  String?
-  techStack String?
-  source    String
-  status    LeadStatus @default(NEW)
-  createdAt DateTime   @default(now())
+  id          String     @id @default(uuid())
+  company     String
+  domain      String
+  email       String?
+  linkedin    String?
+  techStack   String?
+  source      String
+  status      LeadStatus @default(NEW)
+  createdAt   DateTime   @default(now())
+  contactedAt DateTime?
 }

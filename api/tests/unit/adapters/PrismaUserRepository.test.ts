@@ -6,7 +6,6 @@ const mockUser = (overrides: Partial<UserType> = {}): UserType => ({
 	id: "id-1",
 	email: "u@example.com",
 	password: "hashed",
-	username: "user1",
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	deletedAt: null,
@@ -119,7 +118,6 @@ describe("PrismaUserRepository", () => {
 			data: {
 				email: toCreate.email,
 				password: toCreate.password,
-				username: toCreate.username,
 				role: toCreate.role,
 			},
 		});
@@ -129,20 +127,18 @@ describe("PrismaUserRepository", () => {
 		const { PrismaUserRepository } = await import(
 			"@/adapters/secondary/persistence/PrismaUserRepository.ts"
 		);
-		const user = mockUser({ id: "id-1", username: "updated" });
+		const user = mockUser({ id: "id-1" });
 		mockPrisma.user.update.mockResolvedValue(user);
 
 		const repo = new PrismaUserRepository();
 		const result = await repo.update(user);
 
 		expect(result.ok).toBe(true);
-		if (result.ok) expect(result.value.username).toBe("updated");
 		expect(mockPrisma.user.update).toHaveBeenCalledWith({
 			where: { id: user.id },
 			data: {
 				email: user.email,
 				password: user.password,
-				username: user.username,
 				deletedAt: user.deletedAt,
 				role: user.role,
 			},
