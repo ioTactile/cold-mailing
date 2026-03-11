@@ -201,6 +201,7 @@ export async function discoverLeads(
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      Accept: "text/event-stream",
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(options),

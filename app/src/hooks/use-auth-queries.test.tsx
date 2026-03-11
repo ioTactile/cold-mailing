@@ -33,7 +33,6 @@ describe("use-auth-queries", () => {
   const mockUser = {
     id: "user-1",
     email: "u@test.com",
-    username: "user1",
     role: "USER" as const,
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-01T00:00:00Z",
@@ -130,7 +129,6 @@ describe("use-auth-queries", () => {
       result.current.mutate({
         email: "u@test.com",
         password: "Pass123",
-        username: "user1",
       });
 
       await waitFor(() => {
@@ -140,7 +138,6 @@ describe("use-auth-queries", () => {
       expect(authApi.register).toHaveBeenCalledWith({
         email: "u@test.com",
         password: "Pass123",
-        username: "user1",
       });
       expect(result.current.data?.ok).toBe(true);
     });

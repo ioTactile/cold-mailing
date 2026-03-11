@@ -9,17 +9,12 @@ export function UserMenu() {
   if (!isAuthenticated || !user) return null;
 
   return (
-    <div className="flex items-center gap-4">
-      <span className="text-sm font-medium text-foreground">
-        {user.username}
-      </span>
-      <Button
-        onClick={() => logoutMutation.mutate()}
-        disabled={logoutMutation.isPending}
-        variant="outline"
-      >
-        Déconnexion
-      </Button>
-    </div>
+    <Button
+      onClick={() => logoutMutation.mutate()}
+      disabled={logoutMutation.isPending}
+      variant="outline"
+    >
+      Déconnexion
+    </Button>
   );
 }

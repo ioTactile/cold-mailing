@@ -41,6 +41,7 @@ services:
       dockerfile: Dockerfile
       target: dev
     restart: unless-stopped
+    ipc: host
     command: sh -c "pnpm db:generate && pnpm db:migrate:deploy && pnpm run dev"
     environment:
       CI: "true"

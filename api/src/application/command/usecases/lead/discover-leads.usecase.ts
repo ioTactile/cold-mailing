@@ -37,21 +37,26 @@ export class DiscoverLeadsUsecase {
 
 	async execute(
 		options: DiscoverLeadsOptions,
-		onEvent: (event: DiscoverEvent) => void,
+		onEvent: (event: DiscoverEvent) => Promise<void>,
 	): Promise<void> {
 		const { source, query = "React", limit = 20 } = options;
 		let created = 0;
 		let skipped = 0;
 
+		const emit = async (event: DiscoverEvent) => {
+			const result = onEvent(event);
+			if (result instanceof Promise) await result;
+		};
+
 		try {
-			onEvent({
+			await emit({
 				type: "step",
 				message: `Scraping ${source} (query: ${query})…`,
 			});
 
 			const jobs = source === "WTTJ" ? await scrapeWttjJobs(query, limit) : [];
 
-			onEvent({
+			await emit({
 				type: "step",
 				message: `${jobs.length} entreprise(s) trouvée(s). Extraction des domaines et emails…`,
 			});
@@ -60,7 +65,7 @@ export class DiscoverLeadsUsecase {
 				const domain = normalizeDomain(job.companyWebsiteUrl);
 				if (domain === WTTJ_DOMAIN) {
 					skipped += 1;
-					onEvent({
+					await emit({
 						type: "skip",
 						reason: "URL WTTJ (pas de site externe)",
 						company: job.companyName,
@@ -70,12 +75,12 @@ export class DiscoverLeadsUsecase {
 
 				const existing = await this.leadRepository.findByDomain(domain);
 				if (!existing.ok) {
-					onEvent({ type: "error", message: existing.error.message });
+					await emit({ type: "error", message: existing.error.message });
 					continue;
 				}
 				if (existing.value !== null) {
 					skipped += 1;
-					onEvent({
+					await emit({
 						type: "skip",
 						reason: "Déjà en base",
 						company: job.companyName,
@@ -95,21 +100,21 @@ export class DiscoverLeadsUsecase {
 				});
 
 				if (!createResult.ok) {
-					onEvent({ type: "error", message: createResult.error.message });
+					await emit({ type: "error", message: createResult.error.message });
 					continue;
 				}
 
 				created += 1;
-				onEvent({ type: "lead_created", lead: createResult.value });
+				await emit({ type: "lead_created", lead: createResult.value });
 			}
 
-			onEvent({ type: "done", created, skipped });
+			await emit({ type: "done", created, skipped });
 		} catch (err) {
-			onEvent({
+			await emit({
 				type: "error",
 				message: err instanceof Error ? err.message : String(err),
 			});
-			onEvent({ type: "done", created, skipped });
+			await emit({ type: "done", created, skipped });
 		}
 	}
 }

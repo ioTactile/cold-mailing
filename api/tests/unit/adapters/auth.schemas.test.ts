@@ -10,12 +10,10 @@ describe("auth.schemas", () => {
 			const result = registerBodySchema.safeParse({
 				email: "user@example.com",
 				password: "Password1",
-				username: "myuser",
 			});
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.email).toBe("user@example.com");
-				expect(result.data.username).toBe("myuser");
 				expect(result.data.role).toBeUndefined();
 			}
 		});
@@ -24,7 +22,6 @@ describe("auth.schemas", () => {
 			const result = registerBodySchema.safeParse({
 				email: "a@b.com",
 				password: "Pass1word",
-				username: "admin",
 				role: "ADMIN",
 			});
 			expect(result.success).toBe(true);
@@ -37,7 +34,6 @@ describe("auth.schemas", () => {
 			const result = registerBodySchema.safeParse({
 				email: "not-an-email",
 				password: "Password1",
-				username: "u",
 			});
 			expect(result.success).toBe(false);
 		});
@@ -46,7 +42,6 @@ describe("auth.schemas", () => {
 			const result = registerBodySchema.safeParse({
 				email: "u@example.com",
 				password: "Short1",
-				username: "u",
 			});
 			expect(result.success).toBe(false);
 		});
@@ -55,7 +50,6 @@ describe("auth.schemas", () => {
 			const result = registerBodySchema.safeParse({
 				email: "u@example.com",
 				password: "OnlyLetters",
-				username: "u",
 			});
 			expect(result.success).toBe(false);
 		});
@@ -64,16 +58,6 @@ describe("auth.schemas", () => {
 			const result = registerBodySchema.safeParse({
 				email: "u@example.com",
 				password: "12345678",
-				username: "u",
-			});
-			expect(result.success).toBe(false);
-		});
-
-		it("rejette un username trop court", () => {
-			const result = registerBodySchema.safeParse({
-				email: "u@example.com",
-				password: "Password1",
-				username: "u",
 			});
 			expect(result.success).toBe(false);
 		});
@@ -82,7 +66,6 @@ describe("auth.schemas", () => {
 			const result = registerBodySchema.safeParse({
 				email: "User@example.com",
 				password: "Password1",
-				username: "us",
 			});
 			expect(result.success).toBe(true);
 			if (result.success) {

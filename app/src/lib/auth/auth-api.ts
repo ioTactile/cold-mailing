@@ -53,6 +53,8 @@ export async function register(
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    console.log("error", data?.error);
+
     return {
       ok: false,
       error: (data?.error as string) ?? "Erreur lors de l'inscription.",

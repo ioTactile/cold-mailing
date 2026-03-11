@@ -1,5 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { FieldValues, UseFormProps, UseFormReturn } from "react-hook-form";
+import type {
+  FieldValues,
+  Resolver,
+  UseFormProps,
+  UseFormReturn,
+} from "react-hook-form";
 import { useForm } from "react-hook-form";
 import type { ZodType } from "zod";
 
@@ -13,7 +18,9 @@ export function useZodForm<TValues extends FieldValues>(
   options?: Omit<UseFormProps<TValues>, "resolver">,
 ): UseFormReturn<TValues> {
   return useForm<TValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(
+      schema as unknown as Parameters<typeof zodResolver>[0],
+    ) as Resolver<TValues>,
     mode: "onSubmit",
     reValidateMode: "onChange",
     shouldFocusError: false,

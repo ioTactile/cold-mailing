@@ -8,12 +8,19 @@ RUN corepack enable
 WORKDIR /app
 
 # ---- Dev ----
-FROM base AS dev
+# Bookworm (Debian) requis pour Playwright : Alpine n'est pas supporté (musl vs glibc).
+FROM node:24-bookworm-slim AS dev
+
+RUN corepack enable
+WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts
+
+# Binaires Chromium + dépendances système pour le scraper WTTJ (Playwright).
+RUN pnpm exec playwright install chromium --with-deps
 
 COPY . .
 

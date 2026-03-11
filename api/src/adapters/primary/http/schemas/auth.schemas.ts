@@ -13,11 +13,7 @@ const passwordSchema = z
 export const registerBodySchema = z.object({
 	email: z.email("Email invalide").toLowerCase().trim(),
 	password: passwordSchema,
-	username: z
-		.string()
-		.min(2, "Le pseudo doit contenir au moins 2 caractères")
-		.max(50, "Le pseudo ne doit pas dépasser 50 caractères")
-		.trim(),
+
 	role: z.enum(["ADMIN", "USER"]).optional(),
 });
 

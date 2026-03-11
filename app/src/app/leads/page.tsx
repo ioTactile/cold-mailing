@@ -147,7 +147,7 @@ export default function LeadsPage() {
             <h2 className="mb-2 text-sm font-medium text-foreground">
               {t("leads.discoverLog")}
             </h2>
-            <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-xs text-muted-foreground">
+            <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap wrap-break-word text-xs text-muted-foreground">
               {discoverLog.join("\n")}
             </pre>
           </div>

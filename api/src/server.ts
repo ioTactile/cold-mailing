@@ -2,6 +2,8 @@ import "@/pkg/env.ts";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
+import sse from "@fastify/sse";
+import type { FastifyPluginAsync } from "fastify";
 import Fastify from "fastify";
 import { authPlugin } from "@/adapters/primary/http/plugins/auth.plugin.ts";
 import { registerAuthRoutes } from "@/adapters/primary/http/routes/auth.routes.ts";
@@ -63,6 +65,8 @@ await server.register(cookie, {
 await server.register(jwt, {
 	secret: config.jwt.secret,
 });
+
+await server.register(sse as unknown as FastifyPluginAsync);
 
 await authPlugin(server);
 await registerAuthRoutes(server);

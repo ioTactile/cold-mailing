@@ -174,7 +174,7 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 
 	server.post<{ Body: unknown }>(
 		"/leads/discover",
-		{ preHandler: [server.requireAuth] },
+		{ preHandler: [server.requireAuth], sse: true },
 		async (request, reply) => {
 			const parsed = discoverLeadsBodySchema.safeParse(request.body);
 			if (!parsed.success) {
@@ -185,19 +185,11 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 				query: parsed.data.query,
 				limit: parsed.data.limit,
 			};
-			reply.raw.writeHead(200, {
-				"Content-Type": "text/event-stream",
-				"Cache-Control": "no-cache",
-				Connection: "keep-alive",
+			reply.sse.keepAlive();
+			await discoverLeadsUsecase.execute(options, async (event) => {
+				await reply.sse.send({ data: event });
 			});
-			const send = (event: unknown) => {
-				const data = JSON.stringify(event);
-				reply.raw.write(`data: ${data}\n\n`);
-			};
-			await discoverLeadsUsecase.execute(options, (event) => {
-				send(event);
-			});
-			reply.raw.end();
+			reply.sse.close();
 		},
 	);
 }
