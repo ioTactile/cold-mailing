@@ -3,7 +3,7 @@ import { chromium } from "@playwright/test";
 export interface WttjJobResult {
 	companyName: string;
 	companyWebsiteUrl: string;
-	source: "wttj";
+	source: "WTTJ";
 }
 
 const WTTJ_JOBS_BASE = "https://www.welcometothejungle.com/fr/jobs";
@@ -104,7 +104,7 @@ export async function scrapeWttjJobs(
 					results.push({
 						companyName: companyName.trim(),
 						companyWebsiteUrl: companyWebsiteUrl.trim(),
-						source: "wttj",
+						source: "WTTJ",
 					});
 				}
 			} catch {
