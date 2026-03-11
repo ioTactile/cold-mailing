@@ -9,6 +9,7 @@ import { authPlugin } from "@/adapters/primary/http/plugins/auth.plugin.ts";
 import { registerAuthRoutes } from "@/adapters/primary/http/routes/auth.routes.ts";
 import { registerLeadRoutes } from "@/adapters/primary/http/routes/lead.routes.ts";
 import { registerUserRoutes } from "@/adapters/primary/http/routes/user.routes.ts";
+import { registerUtilsRoutes } from "@/adapters/primary/http/routes/utils.routes.ts";
 import { config } from "@/pkg/config/index.ts";
 import { loggerConfig } from "@/pkg/logger/index.ts";
 
@@ -72,6 +73,7 @@ await authPlugin(server);
 await registerAuthRoutes(server);
 await registerUserRoutes(server);
 await registerLeadRoutes(server);
+await registerUtilsRoutes(server);
 
 try {
 	await server.listen({ port: config.server.port, host: config.server.host });

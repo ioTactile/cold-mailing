@@ -4,7 +4,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
+import { CoordsInput } from "@/components/inputs/coords-input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,6 +97,10 @@ export default function LeadsPage() {
   const [discoverSources, setDiscoverSources] = useState<LeadSource[]>([
     LeadSource.WTTJ,
   ]);
+  const [locationLabel, setLocationLabel] = useState<string>("");
+  const [locationRadiusKm, setLocationRadiusKm] = useState<string>("100");
+  const [locationLat, setLocationLat] = useState<string>("");
+  const [locationLng, setLocationLng] = useState<string>("");
   const { t } = useI18n();
   const deleteLeadMutation = useDeleteLeadMutation();
 
@@ -108,10 +114,33 @@ export default function LeadsPage() {
       setDiscoverLog(["Veuillez saisir une requête de recherche."]);
       return;
     }
+
+    const hasLocation =
+      locationLabel.trim() ||
+      locationRadiusKm.trim() ||
+      locationLat.trim() ||
+      locationLng.trim();
+
+    const location = hasLocation
+      ? {
+          label: locationLabel.trim() || undefined,
+          radiusKm: locationRadiusKm.trim()
+            ? Number.parseInt(locationRadiusKm.trim(), 10)
+            : undefined,
+          lat: locationLat.trim()
+            ? Number.parseFloat(locationLat.trim())
+            : undefined,
+          lng: locationLng.trim()
+            ? Number.parseFloat(locationLng.trim())
+            : undefined,
+        }
+      : undefined;
+
     const options: DiscoverOptions = {
       sources: discoverSources.length > 0 ? discoverSources : [LeadSource.WTTJ],
       query: trimmedQuery,
       limit: 20,
+      location,
     };
     discoverLeads(accessToken, options, (event) => {
       setDiscoverLog((prev) => [...prev, formatDiscoverEvent(event)]);
@@ -122,7 +151,17 @@ export default function LeadsPage() {
     }).catch(() => {
       setIsDiscovering(false);
     });
-  }, [accessToken, discoverQuery, discoverSources, isDiscovering, queryClient]);
+  }, [
+    accessToken,
+    discoverQuery,
+    discoverSources,
+    isDiscovering,
+    locationLabel,
+    locationLat,
+    locationLng,
+    locationRadiusKm,
+    queryClient,
+  ]);
 
   const params = statusFilter ? { status: statusFilter } : undefined;
   const { data: leads, isLoading, error } = useLeads(params);
@@ -164,19 +203,19 @@ export default function LeadsPage() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-1">
               <Label htmlFor="discover-query" className="text-sm">
-                Requête de recherche
+                {t("leads.inputs.discoverQueryLabel")}
               </Label>
               <Input
                 id="discover-query"
                 className="w-48"
                 value={discoverQuery}
                 onChange={(event) => setDiscoverQuery(event.target.value)}
-                placeholder="Exemple : React, Next.js…"
+                placeholder={t("leads.inputs.discoverQueryPlaceholder")}
               />
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-foreground">
-                Sources
+                {t("leads.inputs.discoverSourcesLabel")}
               </span>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -214,6 +253,65 @@ export default function LeadsPage() {
                   Indeed
                 </button>
               </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="discover-location-label" className="text-sm">
+                {t("leads.inputs.discoverLocationLabel")}
+              </Label>
+              <CoordsInput
+                id="discover-location-label"
+                onLocationChange={(value) => {
+                  setLocationLabel(value.label);
+                  if (value.lat !== null) {
+                    setLocationLat(String(value.lat));
+                  }
+                  if (value.lng !== null) {
+                    setLocationLng(String(value.lng));
+                  }
+                }}
+                placeholder="Rennes (35)"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="discover-location-radius" className="text-sm">
+                {t("leads.inputs.discoverLocationRadiusLabel")}
+              </Label>
+              <Input
+                id="discover-location-radius"
+                className="w-28"
+                value={locationRadiusKm}
+                onChange={(event) => setLocationRadiusKm(event.target.value)}
+                inputMode="numeric"
+                placeholder="100"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="discover-location-lat" className="text-sm">
+                {t("leads.inputs.discoverLocationLatLabel")}
+              </Label>
+              <Input
+                id="discover-location-lat"
+                className="w-32"
+                value={locationLat}
+                onChange={(event) => setLocationLat(event.target.value)}
+                inputMode="decimal"
+                placeholder="48.11198"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="discover-location-lng" className="text-sm">
+                {t("leads.inputs.discoverLocationLngLabel")}
+              </Label>
+              <Input
+                id="discover-location-lng"
+                className="w-32"
+                value={locationLng}
+                onChange={(event) => setLocationLng(event.target.value)}
+                inputMode="decimal"
+                placeholder="-1.67429"
+              />
             </div>
           </div>
           <Button
@@ -298,6 +396,9 @@ export default function LeadsPage() {
                 <TableHead className="px-4 py-3 font-medium text-foreground">
                   {t("leads.table.actions")}
                 </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-foreground">
+                  {t("leads.table.links")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -307,10 +408,25 @@ export default function LeadsPage() {
                     {lead.company}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-muted-foreground">
-                    {lead.domain}
+                    <Link href={`https://${lead.domain}`} target="_blank">
+                      {lead.domain}
+                    </Link>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-muted-foreground">
-                    {lead.email ?? "—"}
+                  <TableCell
+                    title={lead.email ?? undefined}
+                    className="px-4 py-3 text-muted-foreground max-w-40 truncate cursor-pointer"
+                    onClick={() => {
+                      if (lead.email) {
+                        navigator.clipboard.writeText(lead.email);
+                        toast.success(t("leads.copied"));
+                      }
+                    }}
+                  >
+                    {lead.email ? (
+                      <span className="truncate">{lead.email}</span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-muted-foreground">
                     {lead.source}
@@ -324,7 +440,7 @@ export default function LeadsPage() {
                     {formatDate(lead.createdAt)}
                   </TableCell>
                   <TableCell className="px-4 py-3">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Link href={`/leads/${lead.id}`}>
                         <Button variant="ghost" size="sm">
                           {t("leads.viewDetail")}
@@ -371,6 +487,32 @@ export default function LeadsPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      {lead.linkedinCompanySearchUrl && (
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={lead.linkedinCompanySearchUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            LinkedIn société
+                          </a>
+                        </Button>
+                      )}
+                      {lead.linkedinPeopleSearchUrl && (
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={lead.linkedinPeopleSearchUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Recruteurs LinkedIn
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

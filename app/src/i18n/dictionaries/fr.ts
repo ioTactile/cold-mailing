@@ -22,6 +22,15 @@ export const frDictionary: Dictionary = {
   leads: {
     title: "Leads",
     subtitle: "Prospects et suivi",
+    inputs: {
+      discoverQueryLabel: "Requête de recherche",
+      discoverQueryPlaceholder: "Exemple: React, Next.js…",
+      discoverSourcesLabel: "Sources",
+      discoverLocationLabel: "Localisation (ville / zone)",
+      discoverLocationRadiusLabel: "Rayon (km)",
+      discoverLocationLatLabel: "Latitude",
+      discoverLocationLngLabel: "Longitude",
+    },
     table: {
       company: "Entreprise",
       domain: "Domaine",
@@ -30,6 +39,7 @@ export const frDictionary: Dictionary = {
       status: "Statut",
       createdAt: "Créé le",
       actions: "Actions",
+      links: "Liens",
     },
     status: {
       NEW: "Nouveau",

@@ -8,8 +8,56 @@ export interface WttjJobResult {
 	source: LeadSource;
 }
 
+export interface WttjSearchLocation {
+	/**
+	 * Libellé lisible de la localisation (WTTJ: `aroundQuery`),
+	 * ex: "Rennes, Ille-et-Vilaine, Bretagne, France".
+	 */
+	label?: string;
+	/**
+	 * Rayon de recherche en kilomètres (WTTJ: `aroundRadius`).
+	 */
+	radiusKm?: number;
+	/**
+	 * Coordonnées pour `aroundLatLng` (lat, lng).
+	 */
+	lat?: number;
+	lng?: number;
+}
+
 const WTTJ_JOBS_BASE = "https://www.welcometothejungle.com/fr/jobs";
 const DEFAULT_LIMIT = 20;
+
+export function buildWttjSearchUrl(
+	query: string,
+	location?: WttjSearchLocation,
+): string {
+	const searchParams = new URLSearchParams({ query });
+
+	if (location) {
+		// On cible la France par défaut via le filtre WTTJ.
+		searchParams.append("refinementList[offices.country_code][]", "FR");
+
+		if (
+			typeof location.lat === "number" &&
+			Number.isFinite(location.lat) &&
+			typeof location.lng === "number" &&
+			Number.isFinite(location.lng)
+		) {
+			searchParams.set("aroundLatLng", `${location.lat},${location.lng}`);
+		}
+
+		if (location.radiusKm && Number.isFinite(location.radiusKm)) {
+			searchParams.set("aroundRadius", String(location.radiusKm));
+		}
+
+		if (location.label) {
+			searchParams.set("aroundQuery", location.label);
+		}
+	}
+
+	return `${WTTJ_JOBS_BASE}?${searchParams.toString()}`;
+}
 
 export function extractCompanySlugFromJobUrl(jobUrl: string): string {
 	const match = jobUrl.match(/\/fr\/companies\/([^/]+)\/jobs/);
@@ -27,6 +75,7 @@ export function extractCompanySlugFromJobUrl(jobUrl: string): string {
 export async function scrapeWttjJobs(
 	query: string,
 	limit: number = DEFAULT_LIMIT,
+	location?: WttjSearchLocation,
 ): Promise<WttjJobResult[]> {
 	logger.info({ query, limit }, "[WTTJ] Démarrage du scraping des offres.");
 
@@ -40,8 +89,7 @@ export async function scrapeWttjJobs(
 		const page = await browser.newPage();
 		await page.setDefaultTimeout(15_000);
 
-		const searchParams = new URLSearchParams({ query });
-		const url = `${WTTJ_JOBS_BASE}?${searchParams.toString()}`;
+		const url = buildWttjSearchUrl(query, location);
 
 		logger.info({ url }, "[WTTJ] Navigation vers la page de résultats.");
 

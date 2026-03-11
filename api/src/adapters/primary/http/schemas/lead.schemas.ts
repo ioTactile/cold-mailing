@@ -10,6 +10,29 @@ const leadStatusSchema = z.enum([
 
 const leadSourceSchema = z.enum(["WTTJ", "INDEED"]);
 
+const discoverLocationSchema = z
+	.object({
+		/**
+		 * Libellé lisible de la localisation (ex: "Rennes (35)", "Rennes, Ille-et-Vilaine, Bretagne, France").
+		 */
+		label: z.string().min(1, "La localisation est requise").trim(),
+		/**
+		 * Rayon de recherche en kilomètres.
+		 */
+		radiusKm: z
+			.number()
+			.int()
+			.min(1, "Le rayon doit être supérieur ou égal à 1 km")
+			.max(500, "Le rayon ne peut pas dépasser 500 km")
+			.optional(),
+		/**
+		 * Coordonnées optionnelles pour les sources qui les supportent (WTTJ).
+		 */
+		lat: z.number().optional(),
+		lng: z.number().optional(),
+	})
+	.optional();
+
 export const listLeadsQuerySchema = z.object({
 	status: leadStatusSchema.optional(),
 	source: z.string().min(1).optional(),
@@ -35,6 +58,7 @@ export const discoverLeadsBodySchema = z.object({
 	sources: z.array(leadSourceSchema).min(1, "Au moins une source est requise"),
 	query: z.string().min(1, "La requête est requise").trim(),
 	limit: z.number().int().min(1).max(50),
+	location: discoverLocationSchema,
 });
 
 export type ListLeadsQuery = z.infer<typeof listLeadsQuerySchema>;

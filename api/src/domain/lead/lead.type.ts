@@ -50,3 +50,36 @@ export interface CreateLeadInputType {
 	source: LeadSource;
 	status?: LeadStatus;
 }
+
+export interface LinkedinSearchUrls {
+	linkedinCompanySearchUrl: string;
+	linkedinPeopleSearchUrl: string;
+}
+
+export function buildLinkedinSearchQueries(
+	company: string,
+	domain?: string,
+): LinkedinSearchUrls {
+	let keyword = company.trim();
+
+	if (!keyword && domain) {
+		let normalized = domain.trim().toLowerCase();
+		normalized = normalized.replace(/^https?:\/\//, "").replace(/^www\./, "");
+		const parts = normalized.split(".");
+		keyword = parts[0] ?? "";
+	}
+
+	if (!keyword) {
+		throw new Error(
+			"Nom d'entreprise ou domaine requis pour générer une recherche LinkedIn.",
+		);
+	}
+
+	const companyQuery = encodeURIComponent(keyword);
+	const peopleQuery = encodeURIComponent(`recruteur ${keyword}`);
+
+	return {
+		linkedinCompanySearchUrl: `https://www.linkedin.com/search/results/companies/?keywords=${companyQuery}`,
+		linkedinPeopleSearchUrl: `https://www.linkedin.com/search/results/people/?keywords=${peopleQuery}`,
+	};
+}

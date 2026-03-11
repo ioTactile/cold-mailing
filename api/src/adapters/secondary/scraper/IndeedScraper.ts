@@ -8,17 +8,36 @@ export interface IndeedJobResult {
 	source: LeadSource;
 }
 
+export interface IndeedSearchLocation {
+	/**
+	 * Libellé de localisation utilisé par Indeed (ex: "Rennes (35)", "Paris (75)").
+	 */
+	label?: string;
+	/**
+	 * Rayon de recherche en kilomètres (paramètre `radius` d'Indeed).
+	 */
+	radiusKm?: number;
+}
+
 const INDEED_JOBS_BASE = "https://fr.indeed.com/jobs";
 const DEFAULT_LIMIT = 20;
 
 /**
  * Construit l'URL de recherche Indeed pour une requête donnée.
  */
-export function buildIndeedSearchUrl(query: string): string {
+export function buildIndeedSearchUrl(
+	query: string,
+	location?: IndeedSearchLocation,
+): string {
 	const searchParams = new URLSearchParams({
 		q: query,
-		l: "France",
+		l: location?.label ?? "France",
 	});
+
+	if (location?.radiusKm && Number.isFinite(location.radiusKm)) {
+		searchParams.set("radius", String(location.radiusKm));
+	}
+
 	return `${INDEED_JOBS_BASE}?${searchParams.toString()}`;
 }
 
@@ -113,6 +132,7 @@ export function extractCompanyFromIndeedLdJsonScripts(
 export async function scrapeIndeedJobs(
 	query: string,
 	limit: number = DEFAULT_LIMIT,
+	location?: IndeedSearchLocation,
 ): Promise<IndeedJobResult[]> {
 	logger.info({ query, limit }, "[INDEED] Démarrage du scraping des offres.");
 
@@ -127,7 +147,7 @@ export async function scrapeIndeedJobs(
 		const page = await browser.newPage();
 		await page.setDefaultTimeout(15_000);
 
-		const url = buildIndeedSearchUrl(query);
+		const url = buildIndeedSearchUrl(query, location);
 		logger.info({ url }, "[INDEED] Navigation vers la page de résultats.");
 
 		await page.goto(url, { waitUntil: "domcontentloaded" });

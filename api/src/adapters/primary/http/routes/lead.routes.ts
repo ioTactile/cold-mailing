@@ -204,6 +204,7 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 					source,
 					query: parsed.data.query,
 					limit: parsed.data.limit,
+					location: parsed.data.location,
 				};
 				// Exécute chaque source séquentiellement pour garder un flux d'événements simple.
 				// Les événements sont envoyés au fur et à mesure.

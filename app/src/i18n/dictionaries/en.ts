@@ -22,6 +22,15 @@ export const enDictionary: Dictionary = {
   leads: {
     title: "Leads",
     subtitle: "Prospects and tracking",
+    inputs: {
+      discoverQueryLabel: "Search query",
+      discoverQueryPlaceholder: "Example: React, Next.js…",
+      discoverSourcesLabel: "Sources",
+      discoverLocationLabel: "Location (city / zone)",
+      discoverLocationRadiusLabel: "Radius (km)",
+      discoverLocationLatLabel: "Latitude",
+      discoverLocationLngLabel: "Longitude",
+    },
     table: {
       company: "Company",
       domain: "Domain",
@@ -30,6 +39,7 @@ export const enDictionary: Dictionary = {
       status: "Status",
       createdAt: "Created",
       actions: "Actions",
+      links: "Links",
     },
     status: {
       NEW: "New",

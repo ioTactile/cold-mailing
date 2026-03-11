@@ -21,6 +21,15 @@ export type Dictionary = {
   leads: {
     title: string;
     subtitle: string;
+    inputs: {
+      discoverQueryLabel: string;
+      discoverQueryPlaceholder: string;
+      discoverSourcesLabel: string;
+      discoverLocationLabel: string;
+      discoverLocationRadiusLabel: string;
+      discoverLocationLatLabel: string;
+      discoverLocationLngLabel: string;
+    };
     table: {
       company: string;
       domain: string;
@@ -29,6 +38,7 @@ export type Dictionary = {
       status: string;
       createdAt: string;
       actions: string;
+      links: string;
     };
     status: {
       NEW: string;

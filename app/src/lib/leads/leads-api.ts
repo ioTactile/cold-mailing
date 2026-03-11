@@ -220,10 +220,28 @@ export type DiscoverEvent =
   | { type: "done"; created: number; skipped: number }
   | { type: "error"; message: string };
 
+export interface DiscoverLocationOptions {
+  /**
+   * Libellé lisible de la localisation, ex: "Rennes (35)" ou
+   * "Rennes, Ille-et-Vilaine, Bretagne, France".
+   */
+  label?: string;
+  /**
+   * Rayon de recherche en kilomètres.
+   */
+  radiusKm?: number;
+  /**
+   * Coordonnées optionnelles pour le ciblage par lat/lng.
+   */
+  lat?: number;
+  lng?: number;
+}
+
 export interface DiscoverOptions {
   sources: LeadSource[];
   query: string;
   limit: number;
+  location?: DiscoverLocationOptions;
 }
 
 /**

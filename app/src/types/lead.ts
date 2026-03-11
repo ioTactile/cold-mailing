@@ -27,6 +27,8 @@ export interface Lead {
   status: LeadStatus;
   createdAt: string;
   contactedAt?: string | null;
+  linkedinCompanySearchUrl?: string;
+  linkedinPeopleSearchUrl?: string;
 }
 
 export interface ListLeadsParams {

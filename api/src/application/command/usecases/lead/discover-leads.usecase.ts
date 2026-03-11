@@ -2,8 +2,9 @@ import { scrapeIndeedJobs } from "@/adapters/secondary/scraper/IndeedScraper.ts"
 import { scrapeWttjJobs } from "@/adapters/secondary/scraper/WttjScraper.ts";
 import type { CreateLeadUsecase } from "@/application/command/usecases/lead/create-lead.usecase.ts";
 import type { LeadRepository } from "@/domain/lead/lead.repository.ts";
-import type { LeadType } from "@/domain/lead/lead.type.ts";
+import type { LeadType, LinkedinSearchUrls } from "@/domain/lead/lead.type.ts";
 import {
+	buildLinkedinSearchQueries,
 	LeadSource,
 	type LeadSource as LeadSourceType,
 	LeadStatus,
@@ -12,15 +13,34 @@ import { normalizeDomain } from "@/pkg/domain/normalize-domain.ts";
 import { findEmailsForDomain } from "@/pkg/email-finder/find-emails.ts";
 import { logger } from "@/pkg/logger/index.ts";
 
+export interface DiscoverLocationOptions {
+	/**
+	 * Libellé lisible de la localisation (ex: "Rennes (35)", "Rennes, Ille-et-Vilaine, Bretagne, France").
+	 */
+	label?: string;
+	/**
+	 * Rayon de recherche en kilomètres.
+	 */
+	radiusKm?: number;
+	/**
+	 * Coordonnées optionnelles pour les sources qui les supportent (WTTJ).
+	 */
+	lat?: number;
+	lng?: number;
+}
+
 export interface DiscoverLeadsOptions {
 	source: LeadSourceType;
 	query: string;
 	limit: number;
+	location?: DiscoverLocationOptions;
 }
+
+type LeadWithLinkedinSearch = LeadType & LinkedinSearchUrls;
 
 export type DiscoverEvent =
 	| { type: "step"; message: string }
-	| { type: "lead_created"; lead: LeadType }
+	| { type: "lead_created"; lead: LeadWithLinkedinSearch }
 	| { type: "skip"; reason: string; company?: string }
 	| { type: "done"; created: number; skipped: number }
 	| { type: "error"; message: string };
@@ -44,10 +64,10 @@ export class DiscoverLeadsUsecase {
 		options: DiscoverLeadsOptions,
 		onEvent: (event: DiscoverEvent) => Promise<void>,
 	): Promise<void> {
-		const { source, query, limit } = options;
+		const { source, query, limit, location } = options;
 
 		logger.info(
-			{ source, query, limit },
+			{ source, query, limit, location },
 			"[DiscoverLeads] Démarrage de la découverte de leads.",
 		);
 
@@ -62,7 +82,9 @@ export class DiscoverLeadsUsecase {
 		try {
 			await emit({
 				type: "step",
-				message: `Scraping ${source} (requête : ${query})…`,
+				message: `Scraping ${source} (requête : ${query}${
+					location?.label ? `, localisation : ${location.label}` : ""
+				})…`,
 			});
 
 			let jobs: {
@@ -72,13 +94,13 @@ export class DiscoverLeadsUsecase {
 			}[] = [];
 
 			if (source === LeadSource.WTTJ) {
-				jobs = await scrapeWttjJobs(query, limit);
+				jobs = await scrapeWttjJobs(query, limit, location);
 			} else if (source === LeadSource.INDEED) {
-				jobs = await scrapeIndeedJobs(query, limit);
+				jobs = await scrapeIndeedJobs(query, limit, location);
 			}
 
 			logger.info(
-				{ source, query, limit, jobsCount: jobs.length },
+				{ source, query, limit, location, jobsCount: jobs.length },
 				"[DiscoverLeads] Résultats reçus du scraper.",
 			);
 
@@ -180,6 +202,14 @@ export class DiscoverLeadsUsecase {
 
 				created += 1;
 
+				const leadWithUrls: LeadWithLinkedinSearch = {
+					...createResult.value,
+					...buildLinkedinSearchQueries(
+						createResult.value.company,
+						createResult.value.domain,
+					),
+				};
+
 				logger.info(
 					{
 						company: job.companyName,
@@ -189,7 +219,7 @@ export class DiscoverLeadsUsecase {
 					"[DiscoverLeads] Lead créé avec succès.",
 				);
 
-				await emit({ type: "lead_created", lead: createResult.value });
+				await emit({ type: "lead_created", lead: leadWithUrls });
 			}
 
 			logger.info(
@@ -200,7 +230,7 @@ export class DiscoverLeadsUsecase {
 			await emit({ type: "done", created, skipped });
 		} catch (err) {
 			logger.error(
-				{ err, source, query, limit, created, skipped },
+				{ err, source, query, limit, location, created, skipped },
 				"[DiscoverLeads] Erreur globale lors de la découverte de leads.",
 			);
 
