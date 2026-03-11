@@ -7,6 +7,7 @@ export const frDictionary: Dictionary = {
     loading: "Chargement…",
     back: "Retour",
     close: "Fermer",
+    cancel: "Annuler",
   },
   languageSwitcher: {
     label: (language: Language) => (language === "fr" ? "Français" : "English"),
@@ -43,6 +44,10 @@ export const frDictionary: Dictionary = {
     updateStatus: "Modifier le statut",
     backToList: "Retour à la liste",
     leadDetail: "Détail du lead",
+    delete: "Supprimer",
+    deleteConfirmTitle: "Supprimer ce lead ?",
+    deleteConfirmDescription:
+      "Cette action est définitive et supprimera le lead de la liste.",
     discover: "Lancer une découverte",
     discoverLog: "Journal de la découverte",
     discoverRunning: "Découverte en cours…",

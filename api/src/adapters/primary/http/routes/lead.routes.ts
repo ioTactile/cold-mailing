@@ -8,6 +8,7 @@ import {
 import { ResendEmailSender } from "@/adapters/secondary/email/ResendEmailSender.ts";
 import { PrismaLeadRepository } from "@/adapters/secondary/persistence/PrismaLeadRepository.ts";
 import { CreateLeadUsecase } from "@/application/command/usecases/lead/create-lead.usecase.ts";
+import { DeleteLeadUsecase } from "@/application/command/usecases/lead/delete-lead.usecase.ts";
 import { DiscoverLeadsUsecase } from "@/application/command/usecases/lead/discover-leads.usecase.ts";
 import { SendColdEmailToLeadUsecase } from "@/application/command/usecases/lead/send-cold-email-to-lead.usecase.ts";
 import { UpdateLeadStatusUsecase } from "@/application/command/usecases/lead/update-lead-status.usecase.ts";
@@ -21,6 +22,7 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 	const getLeadByIdUsecase = new GetLeadByIdUsecase(leadRepository);
 	const createLeadUsecase = new CreateLeadUsecase(leadRepository);
 	const updateLeadStatusUsecase = new UpdateLeadStatusUsecase(leadRepository);
+	const deleteLeadUsecase = new DeleteLeadUsecase(leadRepository);
 	const discoverLeadsUsecase = new DiscoverLeadsUsecase(
 		leadRepository,
 		createLeadUsecase,
@@ -169,6 +171,22 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 				return reply.status(500).send({ error: "Erreur serveur." });
 			}
 			return reply.status(200).send(result.value);
+		},
+	);
+
+	server.delete<{ Params: { id: string } }>(
+		"/leads/:id",
+		{ preHandler: [server.requireAuth] },
+		async (request, reply) => {
+			const result = await deleteLeadUsecase.execute(request.params.id);
+			if (!result.ok) {
+				if (result.error.message === "LEAD_NOT_FOUND") {
+					return reply.status(404).send({ error: "Lead non trouvé." });
+				}
+				request.log.error(result.error);
+				return reply.status(500).send({ error: "Erreur serveur." });
+			}
+			return reply.status(204).send();
 		},
 	);
 

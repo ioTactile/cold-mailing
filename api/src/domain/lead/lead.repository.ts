@@ -20,4 +20,5 @@ export interface LeadRepository {
 	): Promise<Result<LeadType, Error>>;
 	update(lead: LeadType): Promise<Result<LeadType, Error>>;
 	countContactedToday(): Promise<Result<number, Error>>;
+	delete(id: string): Promise<Result<void, Error>>;
 }

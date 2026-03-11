@@ -7,6 +7,7 @@ export const enDictionary: Dictionary = {
     loading: "Loading…",
     back: "Back",
     close: "Close",
+    cancel: "Cancel",
   },
   languageSwitcher: {
     label: (language: Language) => (language === "fr" ? "Français" : "English"),
@@ -43,6 +44,10 @@ export const enDictionary: Dictionary = {
     updateStatus: "Update status",
     backToList: "Back to list",
     leadDetail: "Lead detail",
+    delete: "Delete",
+    deleteConfirmTitle: "Delete this lead?",
+    deleteConfirmDescription:
+      "This action is irreversible and will remove the lead from the list.",
     discover: "Start discovery",
     discoverLog: "Discovery log",
     discoverRunning: "Discovery in progress…",

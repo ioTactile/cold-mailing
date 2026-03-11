@@ -4,6 +4,7 @@ import type {
 	ListLeadsFilters,
 } from "@/domain/lead/lead.repository.ts";
 import type { LeadType } from "@/domain/lead/lead.type.ts";
+import { toLeadSource } from "@/domain/lead/lead.type.ts";
 import { prisma } from "@/pkg/database/prisma.ts";
 
 type LeadRow = {
@@ -26,7 +27,7 @@ function toDomain(row: LeadRow): LeadType {
 		email: row.email,
 		linkedin: row.linkedin,
 		techStack: row.techStack,
-		source: row.source,
+		source: toLeadSource(row.source),
 		status: row.status,
 		createdAt: row.createdAt,
 		contactedAt: row.contactedAt ?? null,
@@ -133,6 +134,15 @@ export class PrismaLeadRepository implements LeadRepository {
 				},
 			});
 			return Result.ok(count);
+		} catch (error) {
+			return Result.error(error as Error);
+		}
+	}
+
+	async delete(id: string): Promise<Result<void, Error>> {
+		try {
+			await prisma.lead.delete({ where: { id } });
+			return Result.ok(undefined);
 		} catch (error) {
 			return Result.error(error as Error);
 		}

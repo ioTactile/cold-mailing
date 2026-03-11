@@ -1,4 +1,9 @@
-import type { Lead, LeadStatus, ListLeadsParams } from "@/types/lead";
+import type {
+  Lead,
+  LeadSource,
+  LeadStatus,
+  ListLeadsParams,
+} from "@/types/lead";
 
 import { defaultFetchOptions, getApiUrl } from "../api/api-client";
 
@@ -23,8 +28,8 @@ export async function getLeads(
   const search = new URLSearchParams();
   if (params?.status) search.set("status", params.status);
   if (params?.source) search.set("source", params.source);
-  if (params?.limit != null) search.set("limit", String(params.limit));
-  if (params?.offset != null) search.set("offset", String(params.offset));
+  if (params?.limit) search.set("limit", String(params.limit));
+  if (params?.offset) search.set("offset", String(params.offset));
   const qs = search.toString();
   const url = qs ? `${leadsBase()}?${qs}` : leadsBase();
 
@@ -37,6 +42,9 @@ export async function getLeads(
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    if (res.status === 401) {
+      return { ok: false, error: "Non authentifié." };
+    }
     return {
       ok: false,
       error: (data?.error as string) ?? "Erreur lors du chargement des leads.",
@@ -116,8 +124,7 @@ export async function getLinkedInMessage(
   accessToken: string,
   id: string,
 ): Promise<
-  | { ok: true; data: LinkedInMessageResponse }
-  | { ok: false; error: string }
+  { ok: true; data: LinkedInMessageResponse } | { ok: false; error: string }
 > {
   const res = await fetch(`${leadsBase()}/${id}/linkedin-message`, {
     ...defaultFetchOptions,
@@ -174,6 +181,38 @@ export async function sendLeadEmail(
   return { ok: true, data: data as Lead };
 }
 
+/**
+ * Suppression d’un lead : DELETE /leads/:id.
+ */
+export async function deleteLead(
+  accessToken: string,
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const res = await fetch(`${leadsBase()}/${id}`, {
+    ...defaultFetchOptions,
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+  });
+
+  if (res.status === 204) {
+    return { ok: true };
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return { ok: false, error: "Lead non trouvé." };
+    }
+    return {
+      ok: false,
+      error: (data?.error as string) ?? "Erreur lors de la suppression.",
+    };
+  }
+
+  return { ok: true };
+}
+
 export type DiscoverEvent =
   | { type: "step"; message: string }
   | { type: "lead_created"; lead: Lead }
@@ -182,9 +221,9 @@ export type DiscoverEvent =
   | { type: "error"; message: string };
 
 export interface DiscoverOptions {
-  source: "WTTJ";
-  query?: string;
-  limit?: number;
+  source: LeadSource;
+  query: string;
+  limit: number;
 }
 
 /**
@@ -211,7 +250,8 @@ export async function discoverLeads(
     const data = await res.json().catch(() => ({}));
     onEvent({
       type: "error",
-      message: (data?.error as string) ?? "Erreur lors du lancement de la découverte.",
+      message:
+        (data?.error as string) ?? "Erreur lors du lancement de la découverte.",
     });
     onEvent({ type: "done", created: 0, skipped: 0 });
     return;

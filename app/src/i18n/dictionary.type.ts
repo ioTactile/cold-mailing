@@ -6,6 +6,7 @@ export type Dictionary = {
     loading: string;
     back: string;
     close: string;
+    cancel: string;
   };
   languageSwitcher: {
     label: (language: Language) => string;
@@ -42,6 +43,9 @@ export type Dictionary = {
     updateStatus: string;
     backToList: string;
     leadDetail: string;
+    delete: string;
+    deleteConfirmTitle: string;
+    deleteConfirmDescription: string;
     discover: string;
     discoverLog: string;
     discoverRunning: string;

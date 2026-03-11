@@ -99,7 +99,7 @@ export const I18nProvider = ({ children }: { children: ReactNode }) => {
 export const useI18n = (): I18nContextValue => {
   const ctx = useContext(I18nContext);
   if (!ctx) {
-    throw new Error("useI18n must be used within an I18nProvider");
+    throw new Error("useI18n doit être utilisé dans un I18nProvider");
   }
   return ctx;
 };

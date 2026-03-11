@@ -36,7 +36,7 @@ export function useMe(accessToken: string | null) {
       const token = queryClient.getQueryData<string | null>(
         queryKeys.auth.session(),
       );
-      if (!token) throw new Error("No token");
+      if (!token) throw new Error("Aucun token");
       const result = await authApi.getMe(token);
       if (!result.ok) throw new Error(result.error);
       return result.data;

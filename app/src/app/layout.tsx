@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { AppShell } from "@/components/layout/app-shell";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { defaultLanguage } from "@/i18n/config";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -35,7 +36,9 @@ export default function RootLayout({
       >
         <I18nProvider>
           <QueryProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <AppShell>{children}</AppShell>
+            </AuthProvider>
           </QueryProvider>
         </I18nProvider>
       </body>

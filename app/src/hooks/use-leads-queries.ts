@@ -2,39 +2,60 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { executeWithAuthRetry } from "@/lib/api/auth-fetch";
 import * as leadsApi from "@/lib/leads/leads-api";
 import { queryKeys } from "@/lib/query/query-keys";
 import type { Lead, LeadStatus, ListLeadsParams } from "@/types/lead";
 
 /**
- * Liste des leads (GET /leads). Requiert un accessToken.
+ * Liste des leads (GET /leads).
+ * Le token est lu depuis le cache React Query (auth.session) via executeWithAuthRetry.
  */
-export function useLeads(accessToken: string | null, params?: ListLeadsParams) {
+export function useLeads(params?: ListLeadsParams) {
+  const queryClient = useQueryClient();
+  const hasToken = Boolean(
+    queryClient.getQueryData<string | null>(queryKeys.auth.session()),
+  );
+
   return useQuery({
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: queryKeys.leads.list(params),
-    queryFn: async (): Promise<Lead[]> => {
-      if (!accessToken) throw new Error("No token");
-      const result = await leadsApi.getLeads(accessToken, params);
-      if (!result.ok) throw new Error(result.error);
-      return result.data;
-    },
-    enabled: Boolean(accessToken),
+    queryFn: async (): Promise<Lead[]> =>
+      executeWithAuthRetry({
+        queryClient,
+        fn: leadsApi.getLeads,
+        args: [params],
+      }),
+    enabled: hasToken,
   });
 }
 
 /**
  * Détail d’un lead (GET /leads/:id).
+ * Le token est lu depuis le cache React Query (auth.session) via executeWithAuthRetry.
  */
-export function useLeadById(accessToken: string | null, id: string | null) {
+export function useLeadById(id: string | null) {
+  const queryClient = useQueryClient();
+  const hasToken = Boolean(
+    queryClient.getQueryData<string | null>(queryKeys.auth.session()),
+  );
+
   return useQuery({
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: queryKeys.leads.detail(id ?? ""),
     queryFn: async (): Promise<Lead> => {
-      if (!accessToken || !id) throw new Error("No token or id");
-      const result = await leadsApi.getLeadById(accessToken, id);
-      if (!result.ok) throw new Error(result.error);
-      return result.data;
+      if (!id) {
+        throw new Error("Aucun token ou id");
+      }
+
+      return executeWithAuthRetry({
+        queryClient,
+        fn: leadsApi.getLeadById,
+        args: [id],
+        requireIdMessage: "Aucun token ou id",
+      });
     },
-    enabled: Boolean(accessToken) && Boolean(id),
+    enabled: hasToken && Boolean(id),
   });
 }
 
@@ -83,6 +104,25 @@ export function useSendLeadEmailMutation() {
           result.data,
         );
       }
+    },
+  });
+}
+
+/**
+ * Suppression d’un lead (DELETE /leads/:id).
+ * Invalide la liste et le détail après succès.
+ */
+export function useDeleteLeadMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ accessToken, id }: { accessToken: string; id: string }) =>
+      leadsApi.deleteLead(accessToken, id),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.leads.all });
+      queryClient.removeQueries({
+        queryKey: queryKeys.leads.detail(variables.id),
+      });
     },
   });
 }

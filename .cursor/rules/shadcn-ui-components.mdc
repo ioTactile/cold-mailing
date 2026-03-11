@@ -1,0 +1,46 @@
+---
+description: Préférer les composants shadcn/ui aux éléments HTML natifs quand c'est possible
+globs: app/**/*.tsx
+alwaysApply: false
+---
+
+# Composants shadcn/ui (app)
+
+## 1. Principe général
+
+- **Toujours privilégier** les composants shadcn/ui déjà présents dans le design system (`Button`, `Input`, `Textarea`, `Label`, `Card`, `Badge`, `DropdownMenu`, `Dialog`, etc.) **au lieu** d'éléments HTML bruts (`button`, `input`, `textarea`, `select`, etc.) dès qu'un équivalent existe.
+- L'objectif est d'avoir une **UI cohérente**, accessible, avec le même thème (Tailwind + tokens) partout dans l'app.
+
+```tsx
+// ❌ À éviter
+<button className="px-4 py-2 bg-primary text-primary-foreground rounded-md">
+  Enregistrer
+</button>
+
+// ✅ À utiliser
+import { Button } from "@/components/ui/button";
+
+<Button>
+  Enregistrer
+</Button>
+```
+
+---
+
+## 2. Cas où le natif est acceptable
+
+L'utilisation directe d'éléments HTML natifs reste acceptable uniquement quand :
+
+- **Aucun composant shadcn/ui équivalent** n'existe encore (ex. `table` spécifique, balises purement structurelles comme `section`, `main`, `nav`, `span`, `p`).
+- On est dans un **cas très simple** de markup sans styles particuliers (ex. wrapper layout, texte statique, liste non stylisée).
+- On manipule des primitives Next (`Link`, `Image`) ou des composants maison qui wrap déjà shadcn/ui.
+
+Si un besoin récurrent apparaît (ex. nouveau type de bouton ou d'input), **créer un composant UI dédié** (dans `app/src/components/ui/`) plutôt que multiplier des variantes locales.
+
+---
+
+## 3. Formulaires et actions
+
+- Pour les **actions utilisateur** (submit, cancel, navigation dans l'UI), utiliser les composants shadcn/ui (`Button`, `IconButton` maison, etc.).
+- Pour les **champs de formulaire** (text, email, password, textarea, select, checkbox, etc.), utiliser les composants shadcn/ui correspondants (`Input`, `Textarea`, `Select`, `Checkbox`, `Switch`, etc.).
+

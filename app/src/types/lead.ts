@@ -9,6 +9,12 @@ export const LeadStatus = {
 
 export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
 
+export const LeadSource = {
+  WTTJ: "WTTJ",
+} as const;
+
+export type LeadSource = (typeof LeadSource)[keyof typeof LeadSource];
+
 export interface Lead {
   id: string;
   company: string;
@@ -16,7 +22,7 @@ export interface Lead {
   email: string | null;
   linkedin: string | null;
   techStack: string | null;
-  source: string;
+  source: LeadSource;
   status: LeadStatus;
   createdAt: string;
   contactedAt?: string | null;
@@ -24,7 +30,7 @@ export interface Lead {
 
 export interface ListLeadsParams {
   status?: LeadStatus;
-  source?: string;
+  source?: LeadSource;
   limit?: number;
   offset?: number;
 }

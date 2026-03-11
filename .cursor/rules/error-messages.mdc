@@ -1,0 +1,54 @@
+---
+description: Conventions pour les messages d'erreur (français ou codes enum)
+alwaysApply: true
+---
+
+# Conventions messages d'erreur
+
+## 1. Langue des messages (API, front et Zod)
+
+- **Messages destinés à l'utilisateur** (API, front, logs fonctionnels) doivent être **en français**, clairs et compréhensibles.
+- Éviter les messages techniques bruts (`Invalid token`, `Unknown error`, etc.) pour l'utilisateur final.
+- **Schémas Zod** (`.refine`, messages d'erreur personnalisés, `min(..., message)`, etc.) doivent aussi utiliser **uniquement des messages en français**.
+
+Exemples :
+
+- ✅ `return reply.status(400).send({ error: "Email ou mot de passe invalide." });`
+- ✅ `return reply.status(401).send({ error: "Authentification requise." });`
+- ❌ `return reply.status(400).send({ error: "INVALID_CREDENTIALS" });` directement au front sans traduction.
+- ✅ `z.string().min(1, "L'email est requis")`
+- ❌ `z.string().min(1, "Email is required")`
+
+### 1.1. Zod v4 – validation d’email
+
+- Ne pas utiliser l’ancienne API `z.string().email()`.
+- Utiliser la nouvelle API `z.email()` de Zod v4 partout pour les emails.
+
+Exemples :
+
+- ✅ `email: z.email("Email invalide").optional()`
+- ❌ `email: z.string().email("Email invalide").optional()`
+
+## 2. Codes d'erreur techniques (enum)
+
+- Pour les **cas métier concrets** (ex. auth, leads, quotas), exposer un **code d'erreur stable** sous forme de chaîne enum (UPPER_SNAKE_CASE) pour usage interne/front :
+  - ex. `"INVALID_TOKEN_TYPE"`, `"LEAD_NOT_FOUND"`, `"DAILY_LIMIT_REACHED"`.
+- Ces codes doivent être :
+  - Documentés dans le domaine / use cases (types ou enums).
+  - Utilisés pour la logique applicative (tests, switch/case, UI) plutôt que parser un message libre.
+
+Exemples :
+
+- Backend :
+  - `return Result.error(new Error("INVALID_TOKEN_TYPE"));`
+  - `return reply.status(404).send({ error: "Lead non trouvé.", code: "LEAD_NOT_FOUND" });`
+- Frontend :
+  - `if (error.code === "LEAD_NOT_FOUND") { /* UI spécifique */ }`
+
+## 3. Règle de base
+
+- **Toujours** :
+  - soit renvoyer un **message lisible en français**,
+  - soit renvoyer un **code enum** (et idéalement les deux : `message` + `code`),
+  - **jamais** de mélange arbitraire anglais/français ou de messages techniques bruts pour l'utilisateur final.
+

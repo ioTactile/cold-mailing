@@ -178,7 +178,7 @@ describe("PrismaUserRepository", () => {
 		const { PrismaUserRepository } = await import(
 			"@/adapters/secondary/persistence/PrismaUserRepository.ts"
 		);
-		const dbError = new Error("Prisma error");
+		const dbError = new Error("Erreur Prisma");
 		mockPrisma.user.findUnique.mockRejectedValue(dbError);
 
 		const repo = new PrismaUserRepository();

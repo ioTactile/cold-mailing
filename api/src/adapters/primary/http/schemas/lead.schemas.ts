@@ -8,6 +8,8 @@ const leadStatusSchema = z.enum([
 	"CLOSED",
 ]);
 
+const leadSourceSchema = z.enum(["WTTJ"]);
+
 export const listLeadsQuerySchema = z.object({
 	status: leadStatusSchema.optional(),
 	source: z.string().min(1).optional(),
@@ -21,7 +23,7 @@ export const createLeadBodySchema = z.object({
 	email: z.email().optional().nullable(),
 	linkedin: z.string().optional().nullable(),
 	techStack: z.string().optional().nullable(),
-	source: z.string().min(1, "La source est requise").trim(),
+	source: leadSourceSchema,
 	status: leadStatusSchema.optional(),
 });
 
@@ -30,9 +32,9 @@ export const updateLeadStatusBodySchema = z.object({
 });
 
 export const discoverLeadsBodySchema = z.object({
-	source: z.enum(["WTTJ"]),
-	query: z.string().optional(),
-	limit: z.number().int().min(1).max(50).optional(),
+	source: leadSourceSchema,
+	query: z.string().min(1, "La requête est requise").trim(),
+	limit: z.number().int().min(1).max(50),
 });
 
 export type ListLeadsQuery = z.infer<typeof listLeadsQuerySchema>;

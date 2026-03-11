@@ -2,16 +2,19 @@ import { scrapeWttjJobs } from "@/adapters/secondary/scraper/WttjScraper.ts";
 import type { CreateLeadUsecase } from "@/application/command/usecases/lead/create-lead.usecase.ts";
 import type { LeadRepository } from "@/domain/lead/lead.repository.ts";
 import type { LeadType } from "@/domain/lead/lead.type.ts";
-import { LeadStatus } from "@/domain/lead/lead.type.ts";
+import {
+	LeadSource,
+	type LeadSource as LeadSourceType,
+	LeadStatus,
+} from "@/domain/lead/lead.type.ts";
 import { normalizeDomain } from "@/pkg/domain/normalize-domain.ts";
 import { findEmailsForDomain } from "@/pkg/email-finder/find-emails.ts";
-
-export type DiscoverSource = "WTTJ";
+import { logger } from "@/pkg/logger/index.ts";
 
 export interface DiscoverLeadsOptions {
-	source: DiscoverSource;
-	query?: string;
-	limit?: number;
+	source: LeadSourceType;
+	query: string;
+	limit: number;
 }
 
 export type DiscoverEvent =
@@ -39,7 +42,13 @@ export class DiscoverLeadsUsecase {
 		options: DiscoverLeadsOptions,
 		onEvent: (event: DiscoverEvent) => Promise<void>,
 	): Promise<void> {
-		const { source, query = "React", limit = 20 } = options;
+		const { source, query, limit } = options;
+
+		logger.info(
+			{ source, query, limit },
+			"[DiscoverLeads] Démarrage de la découverte de leads.",
+		);
+
 		let created = 0;
 		let skipped = 0;
 
@@ -51,10 +60,16 @@ export class DiscoverLeadsUsecase {
 		try {
 			await emit({
 				type: "step",
-				message: `Scraping ${source} (query: ${query})…`,
+				message: `Scraping ${source} (requête : ${query})…`,
 			});
 
-			const jobs = source === "WTTJ" ? await scrapeWttjJobs(query, limit) : [];
+			const jobs =
+				source === LeadSource.WTTJ ? await scrapeWttjJobs(query, limit) : [];
+
+			logger.info(
+				{ source, query, limit, jobsCount: jobs.length },
+				"[DiscoverLeads] Résultats reçus du scraper WTTJ.",
+			);
 
 			await emit({
 				type: "step",
@@ -63,6 +78,16 @@ export class DiscoverLeadsUsecase {
 
 			for (const job of jobs) {
 				const domain = normalizeDomain(job.companyWebsiteUrl);
+
+				logger.info(
+					{
+						company: job.companyName,
+						rawUrl: job.companyWebsiteUrl,
+						normalizedDomain: domain,
+					},
+					"[DiscoverLeads] Traitement d'une entreprise issue du scraper.",
+				);
+
 				if (domain === WTTJ_DOMAIN) {
 					skipped += 1;
 					await emit({
@@ -70,11 +95,23 @@ export class DiscoverLeadsUsecase {
 						reason: "URL WTTJ (pas de site externe)",
 						company: job.companyName,
 					});
+
+					logger.info(
+						{
+							company: job.companyName,
+							domain,
+						},
+						"[DiscoverLeads] Entreprise ignorée car domaine WTTJ.",
+					);
 					continue;
 				}
 
 				const existing = await this.leadRepository.findByDomain(domain);
 				if (!existing.ok) {
+					logger.error(
+						{ domain, err: existing.error },
+						"[DiscoverLeads] Erreur lors de la recherche d'un lead existant.",
+					);
 					await emit({ type: "error", message: existing.error.message });
 					continue;
 				}
@@ -85,11 +122,29 @@ export class DiscoverLeadsUsecase {
 						reason: "Déjà en base",
 						company: job.companyName,
 					});
+
+					logger.info(
+						{
+							company: job.companyName,
+							domain,
+						},
+						"[DiscoverLeads] Entreprise ignorée car déjà en base.",
+					);
 					continue;
 				}
 
 				const { emails } = await findEmailsForDomain(domain);
 				const email = emails.length > 0 ? emails[0] : null;
+
+				logger.info(
+					{
+						company: job.companyName,
+						domain,
+						email,
+						emailsCount: emails.length,
+					},
+					"[DiscoverLeads] Emails trouvés pour le domaine.",
+				);
 
 				const createResult = await this.createLeadUsecase.execute({
 					company: job.companyName,
@@ -100,16 +155,44 @@ export class DiscoverLeadsUsecase {
 				});
 
 				if (!createResult.ok) {
+					logger.error(
+						{
+							company: job.companyName,
+							domain,
+							err: createResult.error,
+						},
+						"[DiscoverLeads] Erreur lors de la création du lead.",
+					);
 					await emit({ type: "error", message: createResult.error.message });
 					continue;
 				}
 
 				created += 1;
+
+				logger.info(
+					{
+						company: job.companyName,
+						domain,
+						email,
+					},
+					"[DiscoverLeads] Lead créé avec succès.",
+				);
+
 				await emit({ type: "lead_created", lead: createResult.value });
 			}
 
+			logger.info(
+				{ created, skipped, source, query, limit },
+				"[DiscoverLeads] Découverte de leads terminée.",
+			);
+
 			await emit({ type: "done", created, skipped });
 		} catch (err) {
+			logger.error(
+				{ err, source, query, limit, created, skipped },
+				"[DiscoverLeads] Erreur globale lors de la découverte de leads.",
+			);
+
 			await emit({
 				type: "error",
 				message: err instanceof Error ? err.message : String(err),
