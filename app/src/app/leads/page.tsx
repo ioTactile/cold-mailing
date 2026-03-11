@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { CoordsInput } from "@/components/inputs/coords-input";
+import { CoordsInput, type CoordsInputValue } from "@/components/inputs/coords-input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -103,6 +103,16 @@ export default function LeadsPage() {
   const [locationLng, setLocationLng] = useState<string>("");
   const { t } = useI18n();
   const deleteLeadMutation = useDeleteLeadMutation();
+
+  const handleLocationChange = useCallback((value: CoordsInputValue) => {
+    setLocationLabel(value.label);
+    if (value.lat !== null) {
+      setLocationLat(String(value.lat));
+    }
+    if (value.lng !== null) {
+      setLocationLng(String(value.lng));
+    }
+  }, []);
 
   const runDiscover = useCallback(() => {
     if (!accessToken || isDiscovering) return;
@@ -262,15 +272,7 @@ export default function LeadsPage() {
               </Label>
               <CoordsInput
                 id="discover-location-label"
-                onLocationChange={(value) => {
-                  setLocationLabel(value.label);
-                  if (value.lat !== null) {
-                    setLocationLat(String(value.lat));
-                  }
-                  if (value.lng !== null) {
-                    setLocationLng(String(value.lng));
-                  }
-                }}
+                onLocationChange={handleLocationChange}
                 placeholder="Rennes (35)"
               />
             </div>
