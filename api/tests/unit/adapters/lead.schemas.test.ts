@@ -37,9 +37,9 @@ describe("lead.schemas", () => {
 	});
 
 	describe("discoverLeadsBodySchema", () => {
-		it("valide un body correct", () => {
+		it("valide un body correct avec plusieurs sources", () => {
 			const result = discoverLeadsBodySchema.safeParse({
-				source: "WTTJ",
+				sources: ["WTTJ", "INDEED"],
 				query: "React",
 				limit: 10,
 			});

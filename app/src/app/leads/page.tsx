@@ -92,6 +92,9 @@ export default function LeadsPage() {
   const [discoverQuery, setDiscoverQuery] = useState<string>(
     DEFAULT_DISCOVER_QUERY,
   );
+  const [discoverSources, setDiscoverSources] = useState<LeadSource[]>([
+    LeadSource.WTTJ,
+  ]);
   const { t } = useI18n();
   const deleteLeadMutation = useDeleteLeadMutation();
 
@@ -106,7 +109,7 @@ export default function LeadsPage() {
       return;
     }
     const options: DiscoverOptions = {
-      source: LeadSource.WTTJ,
+      sources: discoverSources.length > 0 ? discoverSources : [LeadSource.WTTJ],
       query: trimmedQuery,
       limit: 20,
     };
@@ -119,7 +122,7 @@ export default function LeadsPage() {
     }).catch(() => {
       setIsDiscovering(false);
     });
-  }, [accessToken, discoverQuery, isDiscovering, queryClient]);
+  }, [accessToken, discoverQuery, discoverSources, isDiscovering, queryClient]);
 
   const params = statusFilter ? { status: statusFilter } : undefined;
   const { data: leads, isLoading, error } = useLeads(params);
@@ -157,28 +160,69 @@ export default function LeadsPage() {
           </h1>
           <p className="text-muted-foreground">{t("leads.subtitle")}</p>
         </div>
-        <div className="flex flex-col items-stretch gap-2 sm:items-end">
-          <Label htmlFor="discover-query" className="text-sm">
-            Requête de recherche
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="discover-query"
-              className="w-48"
-              value={discoverQuery}
-              onChange={(event) => setDiscoverQuery(event.target.value)}
-              placeholder="Exemple : React, Next.js…"
-            />
-            <Button
-              onClick={runDiscover}
-              disabled={isDiscovering}
-              variant="secondary"
-            >
-              {isDiscovering
-                ? t("leads.discoverRunning")
-                : t("leads.discover")}
-            </Button>
+        <div className="flex flex-col items-stretch gap-3 sm:items-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="discover-query" className="text-sm">
+                Requête de recherche
+              </Label>
+              <Input
+                id="discover-query"
+                className="w-48"
+                value={discoverQuery}
+                onChange={(event) => setDiscoverQuery(event.target.value)}
+                placeholder="Exemple : React, Next.js…"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-foreground">
+                Sources
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={`rounded border px-2 py-1 text-xs ${
+                    discoverSources.includes(LeadSource.WTTJ)
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground"
+                  }`}
+                  onClick={() => {
+                    setDiscoverSources((prev) =>
+                      prev.includes(LeadSource.WTTJ)
+                        ? prev.filter((s) => s !== LeadSource.WTTJ)
+                        : [...prev, LeadSource.WTTJ],
+                    );
+                  }}
+                >
+                  WTTJ
+                </button>
+                <button
+                  type="button"
+                  className={`rounded border px-2 py-1 text-xs ${
+                    discoverSources.includes(LeadSource.INDEED)
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground"
+                  }`}
+                  onClick={() => {
+                    setDiscoverSources((prev) =>
+                      prev.includes(LeadSource.INDEED)
+                        ? prev.filter((s) => s !== LeadSource.INDEED)
+                        : [...prev, LeadSource.INDEED],
+                    );
+                  }}
+                >
+                  Indeed
+                </button>
+              </div>
+            </div>
           </div>
+          <Button
+            onClick={runDiscover}
+            disabled={isDiscovering}
+            variant="secondary"
+          >
+            {isDiscovering ? t("leads.discoverRunning") : t("leads.discover")}
+          </Button>
         </div>
       </div>
 

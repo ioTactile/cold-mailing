@@ -8,7 +8,7 @@ const leadStatusSchema = z.enum([
 	"CLOSED",
 ]);
 
-const leadSourceSchema = z.enum(["WTTJ"]);
+const leadSourceSchema = z.enum(["WTTJ", "INDEED"]);
 
 export const listLeadsQuerySchema = z.object({
 	status: leadStatusSchema.optional(),
@@ -32,7 +32,7 @@ export const updateLeadStatusBodySchema = z.object({
 });
 
 export const discoverLeadsBodySchema = z.object({
-	source: leadSourceSchema,
+	sources: z.array(leadSourceSchema).min(1, "Au moins une source est requise"),
 	query: z.string().min(1, "La requête est requise").trim(),
 	limit: z.number().int().min(1).max(50),
 });

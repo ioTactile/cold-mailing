@@ -1,3 +1,4 @@
+import { scrapeIndeedJobs } from "@/adapters/secondary/scraper/IndeedScraper.ts";
 import { scrapeWttjJobs } from "@/adapters/secondary/scraper/WttjScraper.ts";
 import type { CreateLeadUsecase } from "@/application/command/usecases/lead/create-lead.usecase.ts";
 import type { LeadRepository } from "@/domain/lead/lead.repository.ts";
@@ -25,6 +26,7 @@ export type DiscoverEvent =
 	| { type: "error"; message: string };
 
 const WTTJ_DOMAIN = "welcometothejungle.com";
+const INDEED_DOMAIN = "indeed.com";
 
 export class DiscoverLeadsUsecase {
 	private readonly leadRepository: LeadRepository;
@@ -63,12 +65,21 @@ export class DiscoverLeadsUsecase {
 				message: `Scraping ${source} (requête : ${query})…`,
 			});
 
-			const jobs =
-				source === LeadSource.WTTJ ? await scrapeWttjJobs(query, limit) : [];
+			let jobs: {
+				companyName: string;
+				companyWebsiteUrl: string;
+				source: LeadSourceType;
+			}[] = [];
+
+			if (source === LeadSource.WTTJ) {
+				jobs = await scrapeWttjJobs(query, limit);
+			} else if (source === LeadSource.INDEED) {
+				jobs = await scrapeIndeedJobs(query, limit);
+			}
 
 			logger.info(
 				{ source, query, limit, jobsCount: jobs.length },
-				"[DiscoverLeads] Résultats reçus du scraper WTTJ.",
+				"[DiscoverLeads] Résultats reçus du scraper.",
 			);
 
 			await emit({
@@ -88,11 +99,11 @@ export class DiscoverLeadsUsecase {
 					"[DiscoverLeads] Traitement d'une entreprise issue du scraper.",
 				);
 
-				if (domain === WTTJ_DOMAIN) {
+				if (domain === WTTJ_DOMAIN || domain === INDEED_DOMAIN) {
 					skipped += 1;
 					await emit({
 						type: "skip",
-						reason: "URL WTTJ (pas de site externe)",
+						reason: "URL de la plateforme d'offres (pas de site externe)",
 						company: job.companyName,
 					});
 

@@ -17,8 +17,12 @@ export function extractCompanySlugFromJobUrl(jobUrl: string): string {
 }
 
 /**
- * Lance le navigateur Playwright, exécute la recherche WTTJ, extrait les entreprises.
- * Retourne au plus `limit` résultats.
+ * Scraper WTTJ :
+ * - ouvre la page de résultats,
+ * - récupère une liste de liens vers les pages d'offre (`fr/companies/.../jobs/...`),
+ * - ouvre chaque page d'entreprise pour extraire le nom de l'entreprise et un lien externe vers son site.
+ *
+ * L'HTML de WTTJ pouvant évoluer, on loggue largement et on reste tolérant aux erreurs.
  */
 export async function scrapeWttjJobs(
 	query: string,

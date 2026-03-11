@@ -221,7 +221,7 @@ export type DiscoverEvent =
   | { type: "error"; message: string };
 
 export interface DiscoverOptions {
-  source: LeadSource;
+  sources: LeadSource[];
   query: string;
   limit: number;
 }

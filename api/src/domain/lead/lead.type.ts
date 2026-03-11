@@ -10,6 +10,7 @@ export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
 
 export const LeadSource = {
 	WTTJ: "WTTJ",
+	INDEED: "INDEED",
 } as const;
 
 export type LeadSource = (typeof LeadSource)[keyof typeof LeadSource];

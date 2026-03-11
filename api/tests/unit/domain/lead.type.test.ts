@@ -22,7 +22,12 @@ describe("lead.type", () => {
 
 	it("toLeadSource lance une erreur pour une valeur invalide", () => {
 		expect(() => toLeadSource("OTHER")).toThrowError(
-			"Invalid lead source: OTHER",
+			"Source de prospects invalide: OTHER",
 		);
+	});
+
+	it("LeadSource contient INDEED", () => {
+		expect(LeadSource.INDEED).toBe("INDEED");
+		expect(isLeadSource("INDEED")).toBe(true);
 	});
 });

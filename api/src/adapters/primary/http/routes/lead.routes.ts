@@ -198,15 +198,19 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 			if (!parsed.success) {
 				return reply.status(400).send({ error: parsed.error.flatten() });
 			}
-			const options = {
-				source: parsed.data.source,
-				query: parsed.data.query,
-				limit: parsed.data.limit,
-			};
 			reply.sse.keepAlive();
-			await discoverLeadsUsecase.execute(options, async (event) => {
-				await reply.sse.send({ data: event });
-			});
+			for (const source of parsed.data.sources) {
+				const options = {
+					source,
+					query: parsed.data.query,
+					limit: parsed.data.limit,
+				};
+				// Exécute chaque source séquentiellement pour garder un flux d'événements simple.
+				// Les événements sont envoyés au fur et à mesure.
+				await discoverLeadsUsecase.execute(options, async (event) => {
+					await reply.sse.send({ data: event });
+				});
+			}
 			reply.sse.close();
 		},
 	);
