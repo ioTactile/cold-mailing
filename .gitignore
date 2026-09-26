@@ -1,2 +1,11 @@
 node_modules
+
 .env
+.env.*
+*.env
+*.env.*
+.envrc
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
