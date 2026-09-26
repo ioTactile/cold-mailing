@@ -13,6 +13,8 @@ export class GetUserByIdUsecase {
     const result = await this.userRepository.findById(id);
     if (!result.ok) return result;
     if (result.value === null) return Result.ok(null);
-    return Result.ok({ ...result.value, password: undefined });
+    const { password, ...safeUser } = result.value;
+    void password;
+    return Result.ok(safeUser);
   }
 }
