@@ -1,11 +1,6 @@
-import type {
-  Lead,
-  LeadSource,
-  LeadStatus,
-  ListLeadsParams,
-} from "@/types/lead";
+import type { Lead, LeadSource, LeadStatus, ListLeadsParams } from '@/types/lead';
 
-import { defaultFetchOptions, getApiUrl } from "../api/api-client";
+import { defaultFetchOptions, getApiUrl } from '../api/api-client';
 
 function leadsBase() {
   return `${getApiUrl()}/leads`;
@@ -19,23 +14,23 @@ function authHeaders(accessToken: string): HeadersInit {
 }
 
 /**
- * Liste des leads : GET /leads.
+ * List leads: GET /leads.
  */
 export async function getLeads(
   accessToken: string,
   params?: ListLeadsParams,
 ): Promise<{ ok: true; data: Lead[] } | { ok: false; error: string }> {
   const search = new URLSearchParams();
-  if (params?.status) search.set("status", params.status);
-  if (params?.source) search.set("source", params.source);
-  if (params?.limit) search.set("limit", String(params.limit));
-  if (params?.offset) search.set("offset", String(params.offset));
+  if (params?.status) search.set('status', params.status);
+  if (params?.source) search.set('source', params.source);
+  if (params?.limit) search.set('limit', String(params.limit));
+  if (params?.offset) search.set('offset', String(params.offset));
   const qs = search.toString();
   const url = qs ? `${leadsBase()}?${qs}` : leadsBase();
 
   const res = await fetch(url, {
     ...defaultFetchOptions,
-    method: "GET",
+    method: 'GET',
     headers: authHeaders(accessToken),
   });
 
@@ -43,11 +38,11 @@ export async function getLeads(
 
   if (!res.ok) {
     if (res.status === 401) {
-      return { ok: false, error: "Non authentifié." };
+      return { ok: false, error: 'Non authentifié.' };
     }
     return {
       ok: false,
-      error: (data?.error as string) ?? "Erreur lors du chargement des leads.",
+      error: (data?.error as string) ?? 'Erreur lors du chargement des leads.',
     };
   }
 
@@ -55,7 +50,7 @@ export async function getLeads(
 }
 
 /**
- * Détail d’un lead : GET /leads/:id.
+ * Lead detail: GET /leads/:id.
  */
 export async function getLeadById(
   accessToken: string,
@@ -63,7 +58,7 @@ export async function getLeadById(
 ): Promise<{ ok: true; data: Lead } | { ok: false; error: string }> {
   const res = await fetch(`${leadsBase()}/${id}`, {
     ...defaultFetchOptions,
-    method: "GET",
+    method: 'GET',
     headers: authHeaders(accessToken),
   });
 
@@ -71,11 +66,11 @@ export async function getLeadById(
 
   if (!res.ok) {
     if (res.status === 404) {
-      return { ok: false, error: "Lead non trouvé." };
+      return { ok: false, error: 'Lead non trouvé.' };
     }
     return {
       ok: false,
-      error: (data?.error as string) ?? "Erreur lors du chargement du lead.",
+      error: (data?.error as string) ?? 'Erreur lors du chargement du lead.',
     };
   }
 
@@ -83,7 +78,7 @@ export async function getLeadById(
 }
 
 /**
- * Mise à jour du statut : PATCH /leads/:id/status.
+ * Status update: PATCH /leads/:id/status.
  */
 export async function updateLeadStatus(
   accessToken: string,
@@ -92,7 +87,7 @@ export async function updateLeadStatus(
 ): Promise<{ ok: true; data: Lead } | { ok: false; error: string }> {
   const res = await fetch(`${leadsBase()}/${id}/status`, {
     ...defaultFetchOptions,
-    method: "PATCH",
+    method: 'PATCH',
     headers: authHeaders(accessToken),
     body: JSON.stringify({ status }),
   });
@@ -101,11 +96,11 @@ export async function updateLeadStatus(
 
   if (!res.ok) {
     if (res.status === 404) {
-      return { ok: false, error: "Lead non trouvé." };
+      return { ok: false, error: 'Lead non trouvé.' };
     }
     return {
       ok: false,
-      error: (data?.error as string) ?? "Erreur lors de la mise à jour.",
+      error: (data?.error as string) ?? 'Erreur lors de la mise à jour.',
     };
   }
 
@@ -118,17 +113,15 @@ export interface LinkedInMessageResponse {
 }
 
 /**
- * Message LinkedIn personnalisé : GET /leads/:id/linkedin-message.
+ * Personalized LinkedIn message: GET /leads/:id/linkedin-message.
  */
 export async function getLinkedInMessage(
   accessToken: string,
   id: string,
-): Promise<
-  { ok: true; data: LinkedInMessageResponse } | { ok: false; error: string }
-> {
+): Promise<{ ok: true; data: LinkedInMessageResponse } | { ok: false; error: string }> {
   const res = await fetch(`${leadsBase()}/${id}/linkedin-message`, {
     ...defaultFetchOptions,
-    method: "GET",
+    method: 'GET',
     headers: authHeaders(accessToken),
   });
 
@@ -136,11 +129,11 @@ export async function getLinkedInMessage(
 
   if (!res.ok) {
     if (res.status === 404) {
-      return { ok: false, error: "Lead non trouvé." };
+      return { ok: false, error: 'Lead non trouvé.' };
     }
     return {
       ok: false,
-      error: (data?.error as string) ?? "Erreur lors du chargement.",
+      error: (data?.error as string) ?? 'Erreur lors du chargement.',
     };
   }
 
@@ -156,7 +149,7 @@ export async function sendLeadEmail(
 ): Promise<{ ok: true; data: Lead } | { ok: false; error: string }> {
   const res = await fetch(`${leadsBase()}/${id}/send-email`, {
     ...defaultFetchOptions,
-    method: "POST",
+    method: 'POST',
     headers: authHeaders(accessToken),
   });
 
@@ -164,12 +157,12 @@ export async function sendLeadEmail(
 
   if (!res.ok) {
     if (res.status === 404) {
-      return { ok: false, error: "Lead non trouvé." };
+      return { ok: false, error: 'Lead non trouvé.' };
     }
     if (res.status === 429) {
       return {
         ok: false,
-        error: (data?.error as string) ?? "Limite quotidienne atteinte.",
+        error: (data?.error as string) ?? 'Limite quotidienne atteinte.',
       };
     }
     return {
@@ -190,7 +183,7 @@ export async function deleteLead(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const res = await fetch(`${leadsBase()}/${id}`, {
     ...defaultFetchOptions,
-    method: "DELETE",
+    method: 'DELETE',
     headers: authHeaders(accessToken),
   });
 
@@ -202,11 +195,11 @@ export async function deleteLead(
 
   if (!res.ok) {
     if (res.status === 404) {
-      return { ok: false, error: "Lead non trouvé." };
+      return { ok: false, error: 'Lead non trouvé.' };
     }
     return {
       ok: false,
-      error: (data?.error as string) ?? "Erreur lors de la suppression.",
+      error: (data?.error as string) ?? 'Erreur lors de la suppression.',
     };
   }
 
@@ -214,24 +207,24 @@ export async function deleteLead(
 }
 
 export type DiscoverEvent =
-  | { type: "step"; message: string }
-  | { type: "lead_created"; lead: Lead }
-  | { type: "skip"; reason: string; company?: string }
-  | { type: "done"; created: number; skipped: number }
-  | { type: "error"; message: string };
+  | { type: 'step'; message: string }
+  | { type: 'lead_created'; lead: Lead }
+  | { type: 'skip'; reason: string; company?: string }
+  | { type: 'done'; created: number; skipped: number }
+  | { type: 'error'; message: string };
 
 export interface DiscoverLocationOptions {
   /**
-   * Libellé lisible de la localisation, ex: "Rennes (35)" ou
+   * Human-readable location label, e.g. "Rennes (35)" or
    * "Rennes, Ille-et-Vilaine, Bretagne, France".
    */
   label?: string;
   /**
-   * Rayon de recherche en kilomètres.
+   * Search radius in kilometers.
    */
   radiusKm?: number;
   /**
-   * Coordonnées optionnelles pour le ciblage par lat/lng.
+   * Optional coordinates for lat/lng targeting.
    */
   lat?: number;
   lng?: number;
@@ -245,8 +238,8 @@ export interface DiscoverOptions {
 }
 
 /**
- * Lance la découverte de leads (POST /leads/discover) et lit le flux SSE.
- * Appelle onEvent pour chaque événement reçu.
+ * Start lead discovery (POST /leads/discover) and read the SSE stream.
+ * Calls onEvent for each received event.
  */
 export async function discoverLeads(
   accessToken: string,
@@ -254,11 +247,11 @@ export async function discoverLeads(
   onEvent: (event: DiscoverEvent) => void,
 ): Promise<void> {
   const res = await fetch(`${getApiUrl()}/leads/discover`, {
-    method: "POST",
-    credentials: "include",
+    method: 'POST',
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(options),
@@ -267,26 +260,25 @@ export async function discoverLeads(
   if (!res.ok || !res.body) {
     const data = await res.json().catch(() => ({}));
     onEvent({
-      type: "error",
-      message:
-        (data?.error as string) ?? "Erreur lors du lancement de la découverte.",
+      type: 'error',
+      message: (data?.error as string) ?? 'Erreur lors du lancement de la découverte.',
     });
-    onEvent({ type: "done", created: 0, skipped: 0 });
+    onEvent({ type: 'done', created: 0, skipped: 0 });
     return;
   }
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = "";
+  let buffer = '';
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
     for (const line of lines) {
-      if (line.startsWith("data: ")) {
+      if (line.startsWith('data: ')) {
         try {
           const event = JSON.parse(line.slice(6)) as DiscoverEvent;
           onEvent(event);
@@ -296,7 +288,7 @@ export async function discoverLeads(
       }
     }
   }
-  if (buffer.startsWith("data: ")) {
+  if (buffer.startsWith('data: ')) {
     try {
       const event = JSON.parse(buffer.slice(6)) as DiscoverEvent;
       onEvent(event);

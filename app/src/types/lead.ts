@@ -1,17 +1,17 @@
-/** Statut d’un lead (aligné sur l’API). */
+/** Lead status (aligned with the API). */
 export const LeadStatus = {
-  NEW: "NEW",
-  CONTACTED: "CONTACTED",
-  REPLIED: "REPLIED",
-  INTERESTED: "INTERESTED",
-  CLOSED: "CLOSED",
+  NEW: 'NEW',
+  CONTACTED: 'CONTACTED',
+  REPLIED: 'REPLIED',
+  INTERESTED: 'INTERESTED',
+  CLOSED: 'CLOSED',
 } as const;
 
 export type LeadStatus = (typeof LeadStatus)[keyof typeof LeadStatus];
 
 export const LeadSource = {
-  WTTJ: "WTTJ",
-  INDEED: "INDEED",
+  WTTJ: 'WTTJ',
+  INDEED: 'INDEED',
 } as const;
 
 export type LeadSource = (typeof LeadSource)[keyof typeof LeadSource];

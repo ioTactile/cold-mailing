@@ -1,25 +1,21 @@
-import type { LeadSource } from "@/domain/lead/lead.type.ts";
+import type { LeadSource } from '@/domain/lead/lead.type.ts';
 
 export interface JobOffer {
-	companyName: string;
-	companyWebsiteUrl: string;
-	source: LeadSource;
+  companyName: string;
+  companyWebsiteUrl: string;
+  source: LeadSource;
 }
 
 export interface JobSearchLocation {
-	label?: string;
-	radiusKm?: number;
-	lat?: number;
-	lng?: number;
+  label?: string;
+  radiusKm?: number;
+  lat?: number;
+  lng?: number;
 }
 
 /**
- * Port pour la recherche d'offres sur un job board (WTTJ, Indeed, etc.).
+ * Port for searching job listings on a job board (WTTJ, Indeed, etc.).
  */
 export interface JobBoardScraperPort {
-	search(
-		query: string,
-		limit: number,
-		location?: JobSearchLocation,
-	): Promise<JobOffer[]>;
+  search(query: string, limit: number, location?: JobSearchLocation): Promise<JobOffer[]>;
 }

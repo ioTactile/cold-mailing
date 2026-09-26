@@ -2,6 +2,7 @@ import pluginQuery from "@tanstack/eslint-plugin-query";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
 const queryRules = pluginQuery.configs["flat/recommended"];
@@ -10,6 +11,7 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   ...queryRules,
+  eslintPluginPrettierRecommended,
 
   {
     plugins: {

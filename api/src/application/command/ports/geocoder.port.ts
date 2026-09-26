@@ -1,16 +1,13 @@
-import type { Result } from "typescript-result";
+import type { Result } from 'typescript-result';
 
 export interface GeocodeResult {
-	lat: number | null;
-	lng: number | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 /**
- * Port pour le géocodage d'une adresse / localité.
+ * Port for geocoding an address / locality.
  */
 export interface GeocoderPort {
-	geocode(
-		query: string,
-		country?: string,
-	): Promise<Result<GeocodeResult, Error>>;
+  geocode(query: string, country?: string): Promise<Result<GeocodeResult, Error>>;
 }

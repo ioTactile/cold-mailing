@@ -1,5 +1,5 @@
 /**
- * @deprecated Préférer `@/domain/lead/normalize-domain.ts`.
- * Conservé pour compatibilité des imports existants hors application.
+ * @deprecated Prefer `@/domain/lead/normalize-domain.ts`.
+ * Kept for compatibility with existing imports outside the app layer.
  */
-export { normalizeDomain } from "@/domain/lead/normalize-domain.ts";
+export { normalizeDomain } from '@/domain/lead/normalize-domain.ts';

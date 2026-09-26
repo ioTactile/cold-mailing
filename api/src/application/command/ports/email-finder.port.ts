@@ -1,11 +1,11 @@
 export interface FindEmailsResult {
-	emails: string[];
-	pagesCrawled: number;
+  emails: string[];
+  pagesCrawled: number;
 }
 
 /**
- * Port pour la découverte d'emails sur un domaine (crawl pages contact/about).
+ * Port for discovering emails on a domain (crawl contact/about pages).
  */
 export interface EmailFinderPort {
-	findEmailsForDomain(domain: string): Promise<FindEmailsResult>;
+  findEmailsForDomain(domain: string): Promise<FindEmailsResult>;
 }

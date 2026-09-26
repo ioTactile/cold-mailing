@@ -1,6 +1,7 @@
 {
   "name": "cold-mailing",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "prepare": "husky",
     "audit": "pnpm -C api audit --audit-level=high || pnpm -C app audit --audit-level=high || exit 0",
@@ -15,7 +16,7 @@
     "lint-staged": "^16.4.0"
   },
   "lint-staged": {
-    "api/**/*.{js,ts,tsx,json}": "pnpm -C api exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true",
+    "api/**/*.{js,ts,tsx,json}": "pnpm -C api exec eslint --fix",
     "app/**/*.{js,jsx,ts,tsx}": "pnpm -C app exec eslint --fix"
   }
 }

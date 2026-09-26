@@ -2,9 +2,7 @@
 
 Plateforme de prospection commerciale automatisée pour le marché français : découverte de leads, enrichissement (email / LinkedIn), envoi de messages personnalisés et suivi via un dashboard.
 
----
-
-## Fonctionnalités
+## Features
 
 | Module | Description |
 | --- | --- |
@@ -15,20 +13,39 @@ Plateforme de prospection commerciale automatisée pour le marché français : d
 
 Statuts lead : `NEW` → `CONTACTED` → `REPLIED` → `INTERESTED` → `CLOSED`.
 
----
-
 ## Stack
 
 | Couche | Technologies |
 | --- | --- |
-| **API** | Fastify 5, TypeScript (ESM), Zod, Prisma 7, PostgreSQL 16, Redis 7, Resend, Playwright |
-| **App** | Next.js 16 (App Router), React 19, Tailwind CSS 4, TanStack Query, shadcn/ui |
-| **Qualité** | Vitest, Biome (API), ESLint (app), Husky + lint-staged |
-| **Ops** | Docker Compose (dev / prod), pnpm |
+| API | Fastify 5, TypeScript (ESM), Zod, Prisma 7, PostgreSQL 16, Redis 7, Resend, Playwright |
+| App | Next.js 16 (App Router), React 19, Tailwind CSS 4, TanStack Query, shadcn/ui |
+| Qualité | Vitest, ESLint + Prettier, Husky + lint-staged |
+| Ops | Docker Compose (dev / prod), pnpm |
 
-Architecture : **Clean Architecture + DDD** (domain → application → adapters). La logique métier vit dans les use cases ; les routes et Prisma ne font que du mapping.
+## Structure
 
----
+```
+cold-mailing/
+├── api/                    # Backend Fastify
+│   ├── prisma/             # Schema & migrations
+│   ├── src/
+│   │   ├── domain/         # Entités, repositories (interfaces)
+│   │   ├── application/    # Use cases (command / query) & ports
+│   │   ├── adapters/
+│   │   │   ├── primary/    # HTTP (routes, plugins, schemas Zod)
+│   │   │   └── secondary/  # Prisma, scrapers, email, JWT, etc.
+│   │   └── pkg/            # Config, logger, cache, utilitaires
+│   └── tests/
+├── app/                    # Frontend Next.js
+│   └── src/
+│       ├── app/            # App Router (pages)
+│       ├── components/
+│       ├── hooks/
+│       └── lib/            # Clients API, auth, query keys
+├── docker-compose.dev.yml
+├── docker-compose.prod.yml
+└── .env.example
+```
 
 ## Prérequis
 
@@ -36,9 +53,7 @@ Architecture : **Clean Architecture + DDD** (domain → application → adapters
 - [pnpm](https://pnpm.io/) ≥ 10
 - [Docker](https://docs.docker.com/get-docker/) + Docker Compose (optionnel mais recommandé)
 
----
-
-## Démarrage rapide
+## Démarrage
 
 ### 1. Configuration
 
@@ -46,7 +61,22 @@ Architecture : **Clean Architecture + DDD** (domain → application → adapters
 cp .env.example .env
 ```
 
-Renseigner au minimum `COOKIE_SECRET`, `JWT_SECRET`, et en prod des valeurs fortes. Voir [Variables d’environnement](#variables-denvironnement).
+Renseigner au minimum `COOKIE_SECRET`, `JWT_SECRET`, et en prod des valeurs fortes.
+
+Variables principales :
+
+| Variable | Rôle |
+| --- | --- |
+| `DATABASE_URL` | Connexion PostgreSQL |
+| `REDIS_URL` | Cache Redis |
+| `BASE_URL_API` / `BASE_URL_APP` | Origines CORS & URLs publiques |
+| `NEXT_PUBLIC_API_URL` | URL API côté navigateur (build Next.js) |
+| `COOKIE_SECRET` / `JWT_SECRET` | Secrets auth (**obligatoires en prod**) |
+| `JWT_ACCESS_TTL_SECONDS` / `JWT_REFRESH_TTL_SECONDS` | Durée de vie des tokens |
+| `RESEND_API_KEY` / `FROM_EMAIL` | Envoi d’emails |
+| `GOOGLE_MAPS_API_KEY` | Géocodage (si utilisé) |
+
+Référence complète : [`.env.example`](.env.example). En Docker Compose, `DATABASE_URL` pointe vers le service `postgres` du réseau interne ; en local hors Docker, utiliser `localhost`.
 
 ### 2. Mode développement (recommandé)
 
@@ -104,35 +134,6 @@ pnpm install
 pnpm dev
 ```
 
----
-
-## Structure du dépôt
-
-```
-cold-mailing/
-├── api/                    # Backend Fastify
-│   ├── prisma/             # Schema & migrations
-│   ├── src/
-│   │   ├── domain/         # Entités, repositories (interfaces)
-│   │   ├── application/    # Use cases (command / query) & ports
-│   │   ├── adapters/
-│   │   │   ├── primary/    # HTTP (routes, plugins, schemas Zod)
-│   │   │   └── secondary/  # Prisma, scrapers, email, JWT, etc.
-│   │   └── pkg/            # Config, logger, cache, utilitaires
-│   └── tests/
-├── app/                    # Frontend Next.js
-│   └── src/
-│       ├── app/            # App Router (pages)
-│       ├── components/
-│       ├── hooks/
-│       └── lib/            # Clients API, auth, query keys
-├── docker-compose.dev.yml
-├── docker-compose.prod.yml
-└── .env.example
-```
-
----
-
 ## Scripts
 
 ### Racine
@@ -148,7 +149,7 @@ cold-mailing/
 | Commande | Description |
 | --- | --- |
 | `pnpm dev` | Serveur avec rechargement (`tsx watch`) |
-| `pnpm check` | Biome + vérification TypeScript |
+| `pnpm check` | ESLint + vérification TypeScript |
 | `pnpm test` | Tests Vitest |
 | `pnpm test:e2e` | Tests Playwright |
 | `pnpm db:migrate` | Migration Prisma (dev) |
@@ -163,38 +164,12 @@ cold-mailing/
 | `pnpm lint` | ESLint |
 | `pnpm test` | Tests Vitest |
 
----
+## Architecture
 
-## Qualité & Git hooks
+Clean Architecture + DDD (domain → application → adapters). La logique métier vit dans les use cases ; les routes et Prisma ne font que du mapping.
 
-Pre-commit (Husky) : `npx lint-staged`
-
-- Fichiers `api/**` → Biome (`check --write`)
-- Fichiers `app/**` → ESLint (`--fix`)
-
-Toute évolution métier doit s’accompagner de tests (use cases, adapters, composants UI, routes).
-
----
-
-## Variables d’environnement
-
-Fichier de référence : [`.env.example`](.env.example).
-
-| Variable | Rôle |
-| --- | --- |
-| `DATABASE_URL` | Connexion PostgreSQL |
-| `REDIS_URL` | Cache Redis |
-| `BASE_URL_API` / `BASE_URL_APP` | Origines CORS & URLs publiques |
-| `NEXT_PUBLIC_API_URL` | URL API côté navigateur (build Next.js) |
-| `COOKIE_SECRET` / `JWT_SECRET` | Secrets auth (**obligatoires en prod**) |
-| `JWT_ACCESS_TTL_SECONDS` / `JWT_REFRESH_TTL_SECONDS` | Durée de vie des tokens |
-| `RESEND_API_KEY` / `FROM_EMAIL` | Envoi d’emails |
-| `GOOGLE_MAPS_API_KEY` | Géocodage (si utilisé) |
-
-En Docker Compose, `DATABASE_URL` pointe vers le service `postgres` du réseau interne ; en local hors Docker, utiliser `localhost`.
-
----
+Pre-commit (Husky) : `npx lint-staged` — fichiers `api/**` et `app/**` → ESLint (`--fix`).
 
 ## Licence
 
-ISC — ioTactile Cold Mailing
+MIT License — see [LICENSE](./LICENSE).
