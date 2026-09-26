@@ -17,8 +17,9 @@ export function useLeads(params?: ListLeadsParams) {
     queryClient.getQueryData<string | null>(queryKeys.auth.session()),
   );
 
+  // queryClient est stable (useQueryClient) ; le token est lu au moment du fetch
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps -- queryClient stable
   return useQuery({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: queryKeys.leads.list(params),
     queryFn: async (): Promise<Lead[]> =>
       executeWithAuthRetry({
@@ -40,8 +41,9 @@ export function useLeadById(id: string | null) {
     queryClient.getQueryData<string | null>(queryKeys.auth.session()),
   );
 
+  // queryClient est stable (useQueryClient) ; le token est lu au moment du fetch
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps -- queryClient stable
   return useQuery({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: queryKeys.leads.detail(id ?? ""),
     queryFn: async (): Promise<Lead> => {
       if (!id) {

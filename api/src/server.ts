@@ -5,6 +5,7 @@ import jwt from "@fastify/jwt";
 import sse from "@fastify/sse";
 import type { FastifyPluginAsync } from "fastify";
 import Fastify from "fastify";
+import { createAppContainer } from "@/adapters/primary/http/container.ts";
 import { authPlugin } from "@/adapters/primary/http/plugins/auth.plugin.ts";
 import { registerAuthRoutes } from "@/adapters/primary/http/routes/auth.routes.ts";
 import { registerLeadRoutes } from "@/adapters/primary/http/routes/lead.routes.ts";
@@ -70,10 +71,11 @@ await server.register(jwt, {
 await server.register(sse as unknown as FastifyPluginAsync);
 
 await authPlugin(server);
-await registerAuthRoutes(server);
-await registerUserRoutes(server);
-await registerLeadRoutes(server);
-await registerUtilsRoutes(server);
+const container = createAppContainer(server.authToken);
+await registerAuthRoutes(server, container);
+await registerUserRoutes(server, container);
+await registerLeadRoutes(server, container);
+await registerUtilsRoutes(server, container);
 
 try {
 	await server.listen({ port: config.server.port, host: config.server.host });

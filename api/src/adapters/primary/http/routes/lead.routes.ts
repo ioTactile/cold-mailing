@@ -1,37 +1,26 @@
 import type { FastifyInstance } from "fastify";
+import type { AppContainer } from "@/adapters/primary/http/container.ts";
 import {
 	createLeadBodySchema,
 	discoverLeadsBodySchema,
 	listLeadsQuerySchema,
 	updateLeadStatusBodySchema,
 } from "@/adapters/primary/http/schemas/lead.schemas.ts";
-import { ResendEmailSender } from "@/adapters/secondary/email/ResendEmailSender.ts";
-import { PrismaLeadRepository } from "@/adapters/secondary/persistence/PrismaLeadRepository.ts";
-import { CreateLeadUsecase } from "@/application/command/usecases/lead/create-lead.usecase.ts";
-import { DeleteLeadUsecase } from "@/application/command/usecases/lead/delete-lead.usecase.ts";
-import { DiscoverLeadsUsecase } from "@/application/command/usecases/lead/discover-leads.usecase.ts";
-import { SendColdEmailToLeadUsecase } from "@/application/command/usecases/lead/send-cold-email-to-lead.usecase.ts";
-import { UpdateLeadStatusUsecase } from "@/application/command/usecases/lead/update-lead-status.usecase.ts";
-import { GetLeadByIdUsecase } from "@/application/query/usecases/lead/get-lead-by-id.usecase.ts";
-import { ListLeadsUsecase } from "@/application/query/usecases/lead/list-leads.usecase.ts";
-import { renderLinkedInMessage } from "@/pkg/email/linkedin-template.ts";
 
-export async function registerLeadRoutes(server: FastifyInstance) {
-	const leadRepository = new PrismaLeadRepository();
-	const listLeadsUsecase = new ListLeadsUsecase(leadRepository);
-	const getLeadByIdUsecase = new GetLeadByIdUsecase(leadRepository);
-	const createLeadUsecase = new CreateLeadUsecase(leadRepository);
-	const updateLeadStatusUsecase = new UpdateLeadStatusUsecase(leadRepository);
-	const deleteLeadUsecase = new DeleteLeadUsecase(leadRepository);
-	const discoverLeadsUsecase = new DiscoverLeadsUsecase(
-		leadRepository,
+export async function registerLeadRoutes(
+	server: FastifyInstance,
+	container: AppContainer,
+) {
+	const {
+		listLeadsUsecase,
+		getLeadByIdUsecase,
 		createLeadUsecase,
-	);
-	const emailSender = new ResendEmailSender();
-	const sendColdEmailToLeadUsecase = new SendColdEmailToLeadUsecase(
-		leadRepository,
-		emailSender,
-	);
+		updateLeadStatusUsecase,
+		deleteLeadUsecase,
+		discoverLeadsUsecase,
+		sendColdEmailToLeadUsecase,
+		getLinkedInMessageForLeadUsecase,
+	} = container;
 
 	server.get<{ Querystring: unknown }>(
 		"/leads",
@@ -77,20 +66,17 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 		"/leads/:id/linkedin-message",
 		{ preHandler: [server.requireAuth] },
 		async (request, reply) => {
-			const result = await getLeadByIdUsecase.execute(request.params.id);
+			const result = await getLinkedInMessageForLeadUsecase.execute(
+				request.params.id,
+			);
 			if (!result.ok) {
+				if (result.error.message === "LEAD_NOT_FOUND") {
+					return reply.status(404).send({ error: "Lead non trouvé." });
+				}
 				request.log.error(result.error);
 				return reply.status(500).send({ error: "Erreur serveur." });
 			}
-			if (result.value === null) {
-				return reply.status(404).send({ error: "Lead non trouvé." });
-			}
-			const lead = result.value;
-			const message = renderLinkedInMessage(lead);
-			return reply.status(200).send({
-				message,
-				companyLinkedInUrl: lead.linkedin ?? undefined,
-			});
+			return reply.status(200).send(result.value);
 		},
 	);
 
@@ -206,8 +192,6 @@ export async function registerLeadRoutes(server: FastifyInstance) {
 					limit: parsed.data.limit,
 					location: parsed.data.location,
 				};
-				// Exécute chaque source séquentiellement pour garder un flux d'événements simple.
-				// Les événements sont envoyés au fur et à mesure.
 				await discoverLeadsUsecase.execute(options, async (event) => {
 					await reply.sse.send({ data: event });
 				});

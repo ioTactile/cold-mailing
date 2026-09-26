@@ -32,7 +32,6 @@ describe("executeWithAuthRetry", () => {
 
     const result = await executeWithAuthRetry({
       queryClient: client,
-      accessTokenFromHook: null,
       fn,
       args: [],
     });
@@ -57,7 +56,6 @@ describe("executeWithAuthRetry", () => {
 
     const result = await executeWithAuthRetry({
       queryClient: client,
-      accessTokenFromHook: null,
       fn,
       args: [],
     });

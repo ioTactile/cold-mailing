@@ -3,13 +3,35 @@ import type { UserRepository } from "@/domain/user/user.repository.ts";
 import type { UserType } from "@/domain/user/user.type.ts";
 import { prisma } from "@/pkg/database/prisma.ts";
 
+type UserRow = {
+	id: string;
+	email: string;
+	password: string;
+	createdAt: Date;
+	updatedAt: Date;
+	deletedAt: Date | null;
+	role: UserType["role"];
+};
+
+function toDomain(row: UserRow): UserType {
+	return {
+		id: row.id,
+		email: row.email,
+		password: row.password,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt,
+		deletedAt: row.deletedAt,
+		role: row.role,
+	};
+}
+
 export class PrismaUserRepository implements UserRepository {
 	async findById(id: string): Promise<Result<UserType | null, Error>> {
 		try {
 			const user = await prisma.user.findUnique({
 				where: { id },
 			});
-			return Result.ok(user);
+			return Result.ok(user ? toDomain(user) : null);
 		} catch (error) {
 			return Result.error(error as Error);
 		}
@@ -18,7 +40,7 @@ export class PrismaUserRepository implements UserRepository {
 	async findAll(): Promise<Result<UserType[], Error>> {
 		try {
 			const users = await prisma.user.findMany();
-			return Result.ok(users);
+			return Result.ok(users.map(toDomain));
 		} catch (error) {
 			return Result.error(error as Error);
 		}
@@ -29,7 +51,7 @@ export class PrismaUserRepository implements UserRepository {
 			const user = await prisma.user.findUnique({
 				where: { email },
 			});
-			return Result.ok(user);
+			return Result.ok(user ? toDomain(user) : null);
 		} catch (error) {
 			return Result.error(error as Error);
 		}
@@ -44,7 +66,7 @@ export class PrismaUserRepository implements UserRepository {
 					role: user.role,
 				},
 			});
-			return Result.ok(created);
+			return Result.ok(toDomain(created));
 		} catch (error) {
 			return Result.error(error as Error);
 		}
@@ -61,7 +83,7 @@ export class PrismaUserRepository implements UserRepository {
 					role: user.role,
 				},
 			});
-			return Result.ok(updated);
+			return Result.ok(toDomain(updated));
 		} catch (error) {
 			return Result.error(error as Error);
 		}

@@ -1,10 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import { PrismaUserRepository } from "@/adapters/secondary/persistence/PrismaUserRepository.ts";
-import { GetUserByIdUsecase } from "@/application/query/usecases/user/get-user-by-id.usecase.ts";
+import type { AppContainer } from "@/adapters/primary/http/container.ts";
 
-export async function registerUserRoutes(server: FastifyInstance) {
-	const userRepository = new PrismaUserRepository();
-	const getUserByIdUsecase = new GetUserByIdUsecase(userRepository);
+export async function registerUserRoutes(
+	server: FastifyInstance,
+	container: AppContainer,
+) {
+	const { getUserByIdUsecase } = container;
 
 	server.get<{
 		Params: { id: string };
@@ -18,12 +19,10 @@ export async function registerUserRoutes(server: FastifyInstance) {
 				request.log.error(result.error);
 				return reply.status(500).send({ error: "Erreur serveur." });
 			}
-			const user = result.value;
-			if (!user) {
+			if (!result.value) {
 				return reply.status(404).send({ error: "Utilisateur non trouvé." });
 			}
-			const { password: _p, ...safe } = user;
-			return reply.status(200).send(safe);
+			return reply.status(200).send(result.value);
 		},
 	);
 }

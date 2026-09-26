@@ -16,3 +16,6 @@ export interface UserType {
 
 	role: Role;
 }
+
+/** Utilisateur exposé hors couche auth (sans mot de passe). */
+export type PublicUser = Omit<UserType, "password">;

@@ -1,30 +1,19 @@
-import { scrapeIndeedJobs } from "@/adapters/secondary/scraper/IndeedScraper.ts";
-import { scrapeWttjJobs } from "@/adapters/secondary/scraper/WttjScraper.ts";
+import type { EmailFinderPort } from "@/application/command/ports/email-finder.port.ts";
+import type { JobBoardScraperPort } from "@/application/command/ports/job-board-scraper.port.ts";
+import type { LoggerPort } from "@/application/command/ports/logger.port.ts";
 import type { CreateLeadUsecase } from "@/application/command/usecases/lead/create-lead.usecase.ts";
 import type { LeadRepository } from "@/domain/lead/lead.repository.ts";
 import type { LeadType, LinkedinSearchUrls } from "@/domain/lead/lead.type.ts";
 import {
 	buildLinkedinSearchQueries,
-	LeadSource,
 	type LeadSource as LeadSourceType,
 	LeadStatus,
 } from "@/domain/lead/lead.type.ts";
-import { normalizeDomain } from "@/pkg/domain/normalize-domain.ts";
-import { findEmailsForDomain } from "@/pkg/email-finder/find-emails.ts";
-import { logger } from "@/pkg/logger/index.ts";
+import { normalizeDomain } from "@/domain/lead/normalize-domain.ts";
 
 export interface DiscoverLocationOptions {
-	/**
-	 * Libellé lisible de la localisation (ex: "Rennes (35)", "Rennes, Ille-et-Vilaine, Bretagne, France").
-	 */
 	label?: string;
-	/**
-	 * Rayon de recherche en kilomètres.
-	 */
 	radiusKm?: number;
-	/**
-	 * Coordonnées optionnelles pour les sources qui les supportent (WTTJ).
-	 */
 	lat?: number;
 	lng?: number;
 }
@@ -45,19 +34,29 @@ export type DiscoverEvent =
 	| { type: "done"; created: number; skipped: number }
 	| { type: "error"; message: string };
 
-const WTTJ_DOMAIN = "welcometothejungle.com";
-const INDEED_DOMAIN = "indeed.com";
+const PLATFORM_DOMAINS = new Set(["welcometothejungle.com", "indeed.com"]);
 
 export class DiscoverLeadsUsecase {
 	private readonly leadRepository: LeadRepository;
 	private readonly createLeadUsecase: CreateLeadUsecase;
+	private readonly scrapers: Partial<
+		Record<LeadSourceType, JobBoardScraperPort>
+	>;
+	private readonly emailFinder: EmailFinderPort;
+	private readonly logger: LoggerPort;
 
 	constructor(
 		leadRepository: LeadRepository,
 		createLeadUsecase: CreateLeadUsecase,
+		scrapers: Partial<Record<LeadSourceType, JobBoardScraperPort>>,
+		emailFinder: EmailFinderPort,
+		logger: LoggerPort,
 	) {
 		this.leadRepository = leadRepository;
 		this.createLeadUsecase = createLeadUsecase;
+		this.scrapers = scrapers;
+		this.emailFinder = emailFinder;
+		this.logger = logger;
 	}
 
 	async execute(
@@ -66,7 +65,7 @@ export class DiscoverLeadsUsecase {
 	): Promise<void> {
 		const { source, query, limit, location } = options;
 
-		logger.info(
+		this.logger.info(
 			{ source, query, limit, location },
 			"[DiscoverLeads] Démarrage de la découverte de leads.",
 		);
@@ -75,8 +74,7 @@ export class DiscoverLeadsUsecase {
 		let skipped = 0;
 
 		const emit = async (event: DiscoverEvent) => {
-			const result = onEvent(event);
-			if (result instanceof Promise) await result;
+			await onEvent(event);
 		};
 
 		try {
@@ -87,19 +85,19 @@ export class DiscoverLeadsUsecase {
 				})…`,
 			});
 
-			let jobs: {
-				companyName: string;
-				companyWebsiteUrl: string;
-				source: LeadSourceType;
-			}[] = [];
-
-			if (source === LeadSource.WTTJ) {
-				jobs = await scrapeWttjJobs(query, limit, location);
-			} else if (source === LeadSource.INDEED) {
-				jobs = await scrapeIndeedJobs(query, limit, location);
+			const scraper = this.scrapers[source];
+			if (!scraper) {
+				await emit({
+					type: "error",
+					message: `Source de scraping non supportée : ${source}`,
+				});
+				await emit({ type: "done", created, skipped });
+				return;
 			}
 
-			logger.info(
+			const jobs = await scraper.search(query, limit, location);
+
+			this.logger.info(
 				{ source, query, limit, location, jobsCount: jobs.length },
 				"[DiscoverLeads] Résultats reçus du scraper.",
 			);
@@ -112,7 +110,7 @@ export class DiscoverLeadsUsecase {
 			for (const job of jobs) {
 				const domain = normalizeDomain(job.companyWebsiteUrl);
 
-				logger.info(
+				this.logger.info(
 					{
 						company: job.companyName,
 						rawUrl: job.companyWebsiteUrl,
@@ -121,27 +119,19 @@ export class DiscoverLeadsUsecase {
 					"[DiscoverLeads] Traitement d'une entreprise issue du scraper.",
 				);
 
-				if (domain === WTTJ_DOMAIN || domain === INDEED_DOMAIN) {
+				if (PLATFORM_DOMAINS.has(domain)) {
 					skipped += 1;
 					await emit({
 						type: "skip",
 						reason: "URL de la plateforme d'offres (pas de site externe)",
 						company: job.companyName,
 					});
-
-					logger.info(
-						{
-							company: job.companyName,
-							domain,
-						},
-						"[DiscoverLeads] Entreprise ignorée car domaine WTTJ.",
-					);
 					continue;
 				}
 
 				const existing = await this.leadRepository.findByDomain(domain);
 				if (!existing.ok) {
-					logger.error(
+					this.logger.error(
 						{ domain, err: existing.error },
 						"[DiscoverLeads] Erreur lors de la recherche d'un lead existant.",
 					);
@@ -155,29 +145,11 @@ export class DiscoverLeadsUsecase {
 						reason: "Déjà en base",
 						company: job.companyName,
 					});
-
-					logger.info(
-						{
-							company: job.companyName,
-							domain,
-						},
-						"[DiscoverLeads] Entreprise ignorée car déjà en base.",
-					);
 					continue;
 				}
 
-				const { emails } = await findEmailsForDomain(domain);
+				const { emails } = await this.emailFinder.findEmailsForDomain(domain);
 				const email = emails.length > 0 ? emails[0] : null;
-
-				logger.info(
-					{
-						company: job.companyName,
-						domain,
-						email,
-						emailsCount: emails.length,
-					},
-					"[DiscoverLeads] Emails trouvés pour le domaine.",
-				);
 
 				const createResult = await this.createLeadUsecase.execute({
 					company: job.companyName,
@@ -188,7 +160,7 @@ export class DiscoverLeadsUsecase {
 				});
 
 				if (!createResult.ok) {
-					logger.error(
+					this.logger.error(
 						{
 							company: job.companyName,
 							domain,
@@ -210,26 +182,17 @@ export class DiscoverLeadsUsecase {
 					),
 				};
 
-				logger.info(
-					{
-						company: job.companyName,
-						domain,
-						email,
-					},
-					"[DiscoverLeads] Lead créé avec succès.",
-				);
-
 				await emit({ type: "lead_created", lead: leadWithUrls });
 			}
 
-			logger.info(
+			this.logger.info(
 				{ created, skipped, source, query, limit },
 				"[DiscoverLeads] Découverte de leads terminée.",
 			);
 
 			await emit({ type: "done", created, skipped });
 		} catch (err) {
-			logger.error(
+			this.logger.error(
 				{ err, source, query, limit, location, created, skipped },
 				"[DiscoverLeads] Erreur globale lors de la découverte de leads.",
 			);

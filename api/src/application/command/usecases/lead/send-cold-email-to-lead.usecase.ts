@@ -1,19 +1,28 @@
 import { Result } from "typescript-result";
 import type { EmailSenderPort } from "@/application/command/ports/email-sender.port.ts";
+import type { MessageTemplatePort } from "@/application/command/ports/message-template.port.ts";
 import type { LeadRepository } from "@/domain/lead/lead.repository.ts";
 import type { LeadType } from "@/domain/lead/lead.type.ts";
 import { LeadStatus } from "@/domain/lead/lead.type.ts";
-import { renderColdEmailTemplate } from "@/pkg/email/templates.ts";
 
 const MAX_EMAILS_PER_DAY = 50;
 
 export class SendColdEmailToLeadUsecase {
 	private readonly leadRepository: LeadRepository;
 	private readonly emailSender: EmailSenderPort;
+	private readonly messageTemplate: MessageTemplatePort;
+	private readonly maxEmailsPerDay: number;
 
-	constructor(leadRepository: LeadRepository, emailSender: EmailSenderPort) {
+	constructor(
+		leadRepository: LeadRepository,
+		emailSender: EmailSenderPort,
+		messageTemplate: MessageTemplatePort,
+		maxEmailsPerDay: number = MAX_EMAILS_PER_DAY,
+	) {
 		this.leadRepository = leadRepository;
 		this.emailSender = emailSender;
+		this.messageTemplate = messageTemplate;
+		this.maxEmailsPerDay = maxEmailsPerDay;
 	}
 
 	async execute(leadId: string): Promise<Result<LeadType, Error>> {
@@ -32,11 +41,11 @@ export class SendColdEmailToLeadUsecase {
 
 		const countResult = await this.leadRepository.countContactedToday();
 		if (!countResult.ok) return countResult;
-		if (countResult.value >= MAX_EMAILS_PER_DAY) {
+		if (countResult.value >= this.maxEmailsPerDay) {
 			return Result.error(new Error("DAILY_LIMIT_REACHED"));
 		}
 
-		const { subject, html } = renderColdEmailTemplate(lead);
+		const { subject, html } = this.messageTemplate.renderColdEmail(lead);
 		const sendResult = await this.emailSender.send({
 			to: lead.email,
 			subject,
@@ -44,7 +53,7 @@ export class SendColdEmailToLeadUsecase {
 		});
 
 		if (!sendResult.ok) {
-			return Result.error(new Error(sendResult.error));
+			return sendResult;
 		}
 
 		const updatedLead: LeadType = {

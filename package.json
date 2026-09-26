@@ -11,6 +11,11 @@
     "docker:prod:delete": "docker compose -f docker-compose.prod.yml down -v"
   },
   "devDependencies": {
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
+  },
+  "lint-staged": {
+    "api/**/*.{js,ts,tsx,json}": "pnpm -C api exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true",
+    "app/**/*.{js,jsx,ts,tsx}": "pnpm -C app exec eslint --fix"
   }
 }

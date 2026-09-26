@@ -1,105 +1,200 @@
-## IoTactile Games
+# Cold Mailing
 
-Plateforme de jeux en ligne (actuellement centrée sur un jeu de dés temps réel, avec d’autres jeux prévus à l’avenir), pensée pour être auto-hébergée facilement via Docker Compose (backend Fastify + frontend Next.js).
+Plateforme de prospection commerciale automatisée pour le marché français : découverte de leads, enrichissement (email / LinkedIn), envoi de messages personnalisés et suivi via un dashboard.
 
 ---
 
-## Stack technique
+## Fonctionnalités
 
-- **Backend** : Fastify 5, TypeScript, JWT (access + refresh), cookies sécurisés, Zod, Prisma 7 + PostgreSQL, Redis.
-- **Frontend** : Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4.
-- **Architecture** : Clean Architecture + DDD (domain, application, adapters primaires/secondaires).
+| Module | Description |
+| --- | --- |
+| **Découverte** | Scraping de job boards (Welcome to the Jungle, Indeed) pour identifier des entreprises qui recrutent (ex. React / Next.js). |
+| **Enrichissement** | Normalisation de domaine, recherche d’emails sur les pages contact / about / mentions légales, génération de messages LinkedIn. |
+| **Envoi** | Cold emails via Resend, templates personnalisables, suivi du statut des leads. |
+| **Dashboard** | Authentification JWT, liste et détail des leads, mise à jour du pipeline commercial. |
 
-Les détails d’architecture sont décrits dans `.cursor/rules/architecture-projet.mdc`.
+Statuts lead : `NEW` → `CONTACTED` → `REPLIED` → `INTERESTED` → `CLOSED`.
+
+---
+
+## Stack
+
+| Couche | Technologies |
+| --- | --- |
+| **API** | Fastify 5, TypeScript (ESM), Zod, Prisma 7, PostgreSQL 16, Redis 7, Resend, Playwright |
+| **App** | Next.js 16 (App Router), React 19, Tailwind CSS 4, TanStack Query, shadcn/ui |
+| **Qualité** | Vitest, Biome (API), ESLint (app), Husky + lint-staged |
+| **Ops** | Docker Compose (dev / prod), pnpm |
+
+Architecture : **Clean Architecture + DDD** (domain → application → adapters). La logique métier vit dans les use cases ; les routes et Prisma ne font que du mapping.
 
 ---
 
 ## Prérequis
 
-- Docker + Docker Compose installés.
-- Node.js ≥ 22 si tu veux lancer API/front en local sans Docker.
-- Un fichier `.env` à la racine (voir `.env.example`).
+- [Node.js](https://nodejs.org/) ≥ 22 (recommandé : 24, aligné Docker)
+- [pnpm](https://pnpm.io/) ≥ 10
+- [Docker](https://docs.docker.com/get-docker/) + Docker Compose (optionnel mais recommandé)
 
 ---
 
-## Lancer la stack complète avec Docker
+## Démarrage rapide
 
-1. **Créer le fichier d’environnement**
+### 1. Configuration
 
-   ```bash
-   cp .env.example .env
-   ```
+```bash
+cp .env.example .env
+```
 
-2. **Lancer en mode "prod" (API + front + Postgres)**
+Renseigner au minimum `COOKIE_SECRET`, `JWT_SECRET`, et en prod des valeurs fortes. Voir [Variables d’environnement](#variables-denvironnement).
 
-   ```bash
-   docker compose -f docker-compose.prod.yml up -d --build
-   ```
+### 2. Mode développement (recommandé)
 
-3. **Accéder à l’application**
+Infra (Postgres + Redis + API hot-reload) :
 
-- Frontend : `http://localhost:3001`
-- API : `http://localhost:3000`
+```bash
+pnpm docker:dev
+```
 
-Pour plus de détails (déploiement sur VPS, tunnels, reverse proxy, Dokploy, etc.), voir `DEPLOY.md`.
+Frontend en local :
 
----
+```bash
+cd app && pnpm install && pnpm dev
+```
 
-## Lancer en mode développement (API + Postgres)
+| Service | URL |
+| --- | --- |
+| API | http://localhost:3000 |
+| App | http://localhost:3001 |
 
-1. **Stack Docker dev**
+Arrêt :
 
-   ```bash
-   docker compose -f docker-compose.dev.yml up -d --build
-   ```
+```bash
+pnpm docker:dev:down
+```
 
-2. **API seule (sans Docker)**
+### 3. Mode production (stack complète)
 
-   ```bash
-   cd api
-   npm run dev
-   ```
+```bash
+pnpm docker:prod
+```
 
-3. **Frontend seul (sans Docker)**
+Frontend : http://localhost:3001 — API : http://localhost:3000
 
-   ```bash
-   cd app
-   npm run dev
-   ```
+```bash
+pnpm docker:prod:down          # arrêt
+pnpm docker:prod:delete        # arrêt + volumes
+```
 
-Puis ouvrir `http://localhost:3001` (si tu gardes le port Next.js par défaut, adapter l’URL).
+### 4. Sans Docker (API seule)
 
----
+Prérequis : Postgres et Redis accessibles (`DATABASE_URL`, `REDIS_URL` dans `.env`).
 
-## Scripts utiles
+```bash
+cd api
+pnpm install
+pnpm db:generate
+pnpm db:migrate
+pnpm dev
+```
 
-Dans `api/` :
-
-- `npm run dev` : API Fastify avec rechargement.
-- `npm run test` : tests unitaires / e2e (Vitest).
-- `npm run lint` / `npm run format` : Biome.
-
-Dans `app/` :
-
-- `npm run dev` : Next.js en mode développement.
-- `npm run lint` : ESLint.
-
----
-
-## Tests
-
-À chaque nouvelle fonctionnalité ou modification de logique métier :
-
-- **Créer/mettre à jour** les tests correspondants (use cases, services, composants UI, routes).
-- Ne pas considérer une tâche comme terminée tant que les tests ne sont pas à jour.
-
-Les tests de l’API se trouvent dans `api/tests` (Vitest).
+```bash
+cd app
+pnpm install
+pnpm dev
+```
 
 ---
 
-## Structure du projet (vue rapide)
+## Structure du dépôt
 
-- `api/` : API Fastify (domain, application, adapters, Prisma, tests).
-- `app/` : Frontend Next.js (UI, pages/app router).
-- `DEPLOY.md` : guide détaillé de déploiement (local, VPS, Dokploy, tunnels, etc.).
-- `.cursor/rules/` : règles d’architecture et de tests pour le projet.
+```
+cold-mailing/
+├── api/                    # Backend Fastify
+│   ├── prisma/             # Schema & migrations
+│   ├── src/
+│   │   ├── domain/         # Entités, repositories (interfaces)
+│   │   ├── application/    # Use cases (command / query) & ports
+│   │   ├── adapters/
+│   │   │   ├── primary/    # HTTP (routes, plugins, schemas Zod)
+│   │   │   └── secondary/  # Prisma, scrapers, email, JWT, etc.
+│   │   └── pkg/            # Config, logger, cache, utilitaires
+│   └── tests/
+├── app/                    # Frontend Next.js
+│   └── src/
+│       ├── app/            # App Router (pages)
+│       ├── components/
+│       ├── hooks/
+│       └── lib/            # Clients API, auth, query keys
+├── docker-compose.dev.yml
+├── docker-compose.prod.yml
+└── .env.example
+```
+
+---
+
+## Scripts
+
+### Racine
+
+| Commande | Description |
+| --- | --- |
+| `pnpm docker:dev` | Stack dev (Postgres, Redis, API) |
+| `pnpm docker:prod` | Stack prod (Postgres, Redis, API, app) |
+| `pnpm audit` | Audit dépendances api + app |
+
+### `api/`
+
+| Commande | Description |
+| --- | --- |
+| `pnpm dev` | Serveur avec rechargement (`tsx watch`) |
+| `pnpm check` | Biome + vérification TypeScript |
+| `pnpm test` | Tests Vitest |
+| `pnpm test:e2e` | Tests Playwright |
+| `pnpm db:migrate` | Migration Prisma (dev) |
+| `pnpm db:studio` | Prisma Studio |
+
+### `app/`
+
+| Commande | Description |
+| --- | --- |
+| `pnpm dev` | Next.js en développement |
+| `pnpm build` / `pnpm start` | Build & démarrage production |
+| `pnpm lint` | ESLint |
+| `pnpm test` | Tests Vitest |
+
+---
+
+## Qualité & Git hooks
+
+Pre-commit (Husky) : `npx lint-staged`
+
+- Fichiers `api/**` → Biome (`check --write`)
+- Fichiers `app/**` → ESLint (`--fix`)
+
+Toute évolution métier doit s’accompagner de tests (use cases, adapters, composants UI, routes).
+
+---
+
+## Variables d’environnement
+
+Fichier de référence : [`.env.example`](.env.example).
+
+| Variable | Rôle |
+| --- | --- |
+| `DATABASE_URL` | Connexion PostgreSQL |
+| `REDIS_URL` | Cache Redis |
+| `BASE_URL_API` / `BASE_URL_APP` | Origines CORS & URLs publiques |
+| `NEXT_PUBLIC_API_URL` | URL API côté navigateur (build Next.js) |
+| `COOKIE_SECRET` / `JWT_SECRET` | Secrets auth (**obligatoires en prod**) |
+| `JWT_ACCESS_TTL_SECONDS` / `JWT_REFRESH_TTL_SECONDS` | Durée de vie des tokens |
+| `RESEND_API_KEY` / `FROM_EMAIL` | Envoi d’emails |
+| `GOOGLE_MAPS_API_KEY` | Géocodage (si utilisé) |
+
+En Docker Compose, `DATABASE_URL` pointe vers le service `postgres` du réseau interne ; en local hors Docker, utiliser `localhost`.
+
+---
+
+## Licence
+
+ISC — ioTactile Cold Mailing

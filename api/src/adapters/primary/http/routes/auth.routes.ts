@@ -1,15 +1,10 @@
 import type { FastifyInstance } from "fastify";
+import type { AppContainer } from "@/adapters/primary/http/container.ts";
 import {
 	loginBodySchema,
 	registerBodySchema,
 } from "@/adapters/primary/http/schemas/auth.schemas.ts";
-import { PrismaUserRepository } from "@/adapters/secondary/persistence/PrismaUserRepository.ts";
-import { BcryptPasswordHasher } from "@/adapters/secondary/security/BcryptPasswordHasher.ts";
 import type { AccessTokenPayload } from "@/application/command/ports/auth-token.port.ts";
-import { LoginUsecase } from "@/application/command/usecases/user/login.usecase.ts";
-import { RefreshTokenUsecase } from "@/application/command/usecases/user/refresh-token.usecase.ts";
-import { RegisterUserUsecase } from "@/application/command/usecases/user/register-user.usecase.ts";
-import { GetUserByIdUsecase } from "@/application/query/usecases/user/get-user-by-id.usecase.ts";
 import { config } from "@/pkg/config/index.ts";
 import {
 	buildLoginKey,
@@ -18,22 +13,16 @@ import {
 	resetLoginAttempts,
 } from "@/pkg/security/loginRateLimiter.ts";
 
-export async function registerAuthRoutes(server: FastifyInstance) {
-	const userRepository = new PrismaUserRepository();
-	const passwordHasher = new BcryptPasswordHasher();
-	const authToken = server.authToken;
-
-	const registerUsecase = new RegisterUserUsecase(
-		userRepository,
-		passwordHasher,
-	);
-	const loginUsecase = new LoginUsecase(
-		userRepository,
-		passwordHasher,
-		authToken,
-	);
-	const refreshTokenUsecase = new RefreshTokenUsecase(authToken);
-	const getUserByIdUsecase = new GetUserByIdUsecase(userRepository);
+export async function registerAuthRoutes(
+	server: FastifyInstance,
+	container: AppContainer,
+) {
+	const {
+		registerUserUsecase,
+		loginUsecase,
+		refreshTokenUsecase,
+		getUserByIdUsecase,
+	} = container;
 
 	server.post<{ Body: unknown }>("/auth/register", async (request, reply) => {
 		const parsed = registerBodySchema.safeParse(request.body);
@@ -44,7 +33,7 @@ export async function registerAuthRoutes(server: FastifyInstance) {
 			});
 		}
 
-		const result = await registerUsecase.execute(parsed.data);
+		const result = await registerUserUsecase.execute(parsed.data);
 		if (!result.ok) {
 			if (result.error.message === "EMAIL_ALREADY_USED") {
 				return reply.status(409).send({ error: "Cet email est déjà utilisé." });
@@ -166,12 +155,10 @@ export async function registerAuthRoutes(server: FastifyInstance) {
 				request.log.error(result.error);
 				return reply.status(500).send({ error: "Erreur serveur." });
 			}
-			const user = result.value;
-			if (!user) {
+			if (!result.value) {
 				return reply.status(404).send({ error: "Utilisateur non trouvé." });
 			}
-			const { password: _p, ...safe } = user;
-			return reply.status(200).send(safe);
+			return reply.status(200).send(result.value);
 		},
 	);
 }

@@ -1,3 +1,5 @@
+import type { Result } from "typescript-result";
+
 export interface SendEmailParams {
 	to: string;
 	subject: string;
@@ -10,8 +12,5 @@ export interface SendEmailParams {
  * L'implémentation (ex. SMTP, Resend) reste dans les adapters.
  */
 export interface EmailSenderPort {
-	/** Envoi un email. */
-	send(
-		params: SendEmailParams,
-	): Promise<{ ok: true } | { ok: false; error: string }>;
+	send(params: SendEmailParams): Promise<Result<void, Error>>;
 }

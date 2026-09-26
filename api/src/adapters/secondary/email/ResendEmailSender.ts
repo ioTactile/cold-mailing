@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { Result } from "typescript-result";
 import type { EmailSenderPort } from "@/application/command/ports/email-sender.port.ts";
 
 const FROM_EMAIL = String(process.env.FROM_EMAIL);
@@ -9,11 +10,11 @@ export class ResendEmailSender implements EmailSenderPort {
 		subject: string;
 		html: string;
 		from?: string;
-	}): Promise<{ ok: true } | { ok: false; error: string }> {
+	}): Promise<Result<void, Error>> {
 		try {
 			const apiKey = process.env.RESEND_API_KEY;
 			if (!apiKey) {
-				return { ok: false, error: "RESEND_API_KEY non configuré." };
+				return Result.error(new Error("RESEND_API_KEY non configuré."));
 			}
 			const resend = new Resend(apiKey);
 			const { data, error } = await resend.emails.send({
@@ -23,17 +24,14 @@ export class ResendEmailSender implements EmailSenderPort {
 				html: params.html,
 			});
 			if (error) {
-				return { ok: false, error: error.message };
+				return Result.error(new Error(error.message));
 			}
 			if (!data?.id) {
-				return { ok: false, error: "Réponse Resend invalide." };
+				return Result.error(new Error("Réponse Resend invalide."));
 			}
-			return { ok: true };
+			return Result.ok(undefined);
 		} catch (err) {
-			return {
-				ok: false,
-				error: err instanceof Error ? err.message : String(err),
-			};
+			return Result.error(err instanceof Error ? err : new Error(String(err)));
 		}
 	}
 }

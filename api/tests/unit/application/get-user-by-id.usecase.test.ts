@@ -41,7 +41,15 @@ describe("GetUserByIdUsecase", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.value).toEqual(user);
+			expect(result.value).toEqual({
+				id: user.id,
+				email: user.email,
+				createdAt: user.createdAt,
+				updatedAt: user.updatedAt,
+				deletedAt: user.deletedAt,
+				role: user.role,
+			});
+			expect(result.value).not.toHaveProperty("password");
 		}
 		expect(userRepository.findById).toHaveBeenCalledWith("id-123");
 	});
